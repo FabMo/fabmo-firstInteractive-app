@@ -1,0 +1,17 @@
+{
+	"name":"FirstREACH",
+	"author":"Ryan Sturmer (from Touch&Go) + TH",
+	"main":"./index.html",
+	"license":"MIT",
+	"repository":"https://github.com/tedh-shopbot/cbn-fabmo-firstreach-app/",
+	"icon":"icon.png",
+	"icon_color":"beige",
+	"version":"0.0.6",
+	"website":"http://www.handibot.com",
+	"description":"FirstREACH puttering ...",
+	"id":"fabmo-firstreach",
+	"devDependencies": {
+	    "grunt": "^0.4.5",
+	    "grunt-zip": "^0.17.1"
+  	}
+}

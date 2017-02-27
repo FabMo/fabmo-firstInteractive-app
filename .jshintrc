@@ -1,0 +1,6 @@
+//jshint options
+{
+  "maxerr": 100,
+  "lastsemic": true,
+  "asi": true
+}

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>First Reach</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+  </head>
+  <body>
+      <div id="container">
+        <canvas width="100" height="100" id="toolcanvas"></canvas>
+        <div class="right-toolbox">
+          <div id="snap-button" class="button snap-button disabled"></div>
+          <div id="snap-button" class="button home-button"></div>
+          <div id="snap-button" class="button center-button"></div>
+          <div id="position"></div>
+        </div>        
+      </div>
+    
+    <script src="js/jquery.js"></script>    
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/tooldisplay.js"></script>
+    <script src="js/jquery.confirm.min.js"></script>
+    <script src="js/fabmo.js"></script>
+
+  <script type="text/javascript" src="js/paper/paper-full.js"></script>
+
+    <script type="text/javascript">
+      var fabmo = new FabMoDashboard();
+        var display;
+        var state = {
+          snap : 'false'
+        };
+
+        function resizeCanvas() {
+          var container= document.getElementById("container");
+          container.style.height=window.innerHeight;
+          container.style.width=window.innerWidth;
+          display.canvas.width = window.innerWidth;
+          display.canvas.height = window.innerHeight;
+          display.draw();
+        }
+
+        function saveState() {
+          if(typeof(Storage) !== "undefined") {
+            localStorage.state = JSON.stringify(state);
+          } else {
+            console.warn("No HTML5 storage support?");
+          }
+        }
+
+        function loadState() {
+          var obj;
+          if(typeof(Storage) !== "undefined") {
+            try {
+              obj = JSON.parse(localStorage.state);
+            } catch(e) {
+              obj = {snap : false};
+            }
+            state.snap = obj.snap || false;
+          } else {
+            console.warn("No HTML5 storage support?");
+          }
+        }
+
+        function setupControls() {
+          if(state.snap) {
+            $('#snap-button').removeClass('disabled');
+          } else {
+            $('#snap-button').addClass('disabled');
+          }            
+
+          $('.snap-button').click(function(evt) {
+            if(state.snap) {
+              $('#snap-button').addClass('disabled');
+            } else {
+              $('#snap-button').removeClass('disabled');
+            }
+            state.snap = !state.snap;
+            display.setSnap(state.snap);
+            saveState();
+          });
+
+          $('.home-button').click(function(evt) {
+            display.gotoExtents(1000);
+          });
+
+          $('.center-button').click(function(evt) {
+            display.goto(display.getToolPosition() || {x:0,y:0}, 1000);
+          });
+        }
+
+
+/////////////////////////////////////////////////////////////
+        $(document).ready(function() {
+          canvas = document.getElementById('toolcanvas');
+          display = new Grid(canvas, {
+            tableColor : '#FFFF99'
+          });
+
+
+          this.paper = new paper.PaperScope();
+          this.paper.setup(canvas);
+          this.paper.style = "";
+ console.log(canvas)  
+
+          resizeCanvas();
+          display.scale = Math.max(display.canvas.width, display.canvas.height)/8.0;
+          loadState();
+          setupControls();
+          display.draw();
+
+
+
+
+          fabmo.on('status', function(status) {
+            x = status.posx;
+            y = status.posy;
+            if(x !== undefined && y !== undefined) {
+              display.setToolPosition(x,y);
+            }
+          });
+
+          fabmo.requestStatus();
+
+          fabmo.getConfig(function(err, cfg) {
+            try {
+              if(cfg.machine.envelope) {
+                display.setExtents(cfg.machine.envelope);
+                display.gotoExtents(1000);
+              }              
+              if(cfg.machine.auth_input === 0) {
+                display.setConfirm(false);
+//                display.setConfirm(true);
+              }
+            } catch(e) {
+              console.error(e);
+            }
+          });
+
+          var lastTime = new Date();
+          //cktime.last = cktime.getTime();
+
+          fabmo.runGCode('F30 \n');
+//          fabmo.runGCode('G90 \n'); // Make us absolute
+
+//   could be identified more individually
+    // Create a Paper.js Path to draw a line into it:
+//     var path = new paper.Path();
+//     path.strokeColor = 'black';
+//     var start = new paper.Point(5, 5);
+//     path.moveTo(start);
+ console.log("start point ?")  
+
+          //pos = evt.pos;
+          var last_pos_x = 0;
+          var last_pos_y = 0;
+
+          display.on('click', function(evt) {
+            var newTime = new Date();
+            var interval = newTime.getTime() - lastTime.getTime();
+            var err
+            pos = state.snap ? evt.snapPos : evt.pos;
+            lastTime = newTime;
+
+            var to_x = pos.x;
+            var to_y = pos.y;
+            if (Math.abs(to_x - last_pos_x) > 0.1 || Math.abs(to_y - last_pos_y) > 0.1) {
+              fabmo.livecodeStart(to_x, to_y,(err));
+              last_pos_x = to_x;
+              last_pos_y = to_y;
+console.log("**nextLoc ", to_x, to_y, interval);
+            }
+//            console.log("**loc " + JSON.stringify(gcode));
+
+    // // Note that the plus operator on Point objects does not work
+    // // in JavaScript. Instead, we need to call the add() function:
+//               path.lineTo(start.add([ 50, 25 ]));
+    // // Draw the view now:
+//               paper.view.draw();
+//console.log("trying to draw ?")  
+
+
+
+          });
+
+          window.addEventListener('resize', resizeCanvas);
+          resizeCanvas();
+          display.scale = Math.max(display.canvas.width, display.canvas.height)/8.0;
+          loadState();
+          setupControls();
+          display.draw();
+
+    // view.onResize = function(event) {
+    // // Whenever the view is resized, move the path to its center:
+    //     path.position = view.center;
+    // }
+
+          window.addEventListener("unload", function(e){ // Clear file ops, make abs on LOAD & UNLOAD
+            var gcode = ['M30', 'G90'].join('\n');
+            fabmo.runGCode(gcode);
+          }, false);
+
+
+/////////////////////////////////////////////////
+        });
+
+    </script>
+
+  </body>
+</html>
