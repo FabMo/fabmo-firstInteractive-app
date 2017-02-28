@@ -16,13 +16,14 @@
             point: new Point(20, 30),
             fillColor: 'black',
         });
+        textItem1.scale(1,-1);
+        
         var textItem2 = new PointText({
             content: 'Tool Location: ',
-            point: new Point(20, 50),
+            point: new Point(300, 30),
             fillColor: 'black',
         });
-
-
+        textItem2.scale(1,-1);
 
           fabmo.on('status', function(status) {
             tool_x = status.posx;
@@ -37,6 +38,9 @@
           var circle = new Path.Circle(100,100, 10);
           circle.strokeColor = "red";
           // how to constrain the path of moves to not be at too great an angle
+view.center = circle.position;
+view.scale(2, -2);
+
 
 
           fabmo.getConfig(function(err, cfg) {

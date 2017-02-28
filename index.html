@@ -4,53 +4,21 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>First Reach</title>
+    <title>First ReachIn</title>
     <link href="css/bootstrap.min.css" rel="stylesheet">
-    <script type="text/javascript" src="js/paper/paper-full.js"></script>
     <link href="css/style.css" rel="stylesheet">
     <script src="js/libs/jquery.js"></script>    
     <script src="js/libs/bootstrap.min.js"></script>
     <script src="js/libs/jquery.confirm.min.js"></script>
     <script src="js/libs/fabmo.js"></script>
-</head>
+    <script type="text/javascript" src="js/paper/paper-full.js"></script>
+    <script type="text/paperscript" canvas="riCanvas" src="js/make_path_paper.js"></script>
+ </head>
 
 <body>
 
-  <!-- Nav tabs -->
-  <div class="tabs-container">
-    <ul class="nav nav-tabs" id="tabslist" role="tablist">
-      <li class="active"><a id="exp1-tab-link" href="#tab-exp1" role="tab" data-toggle="tab"><strong>Expt 1</strong></a></li>
-      <li><a id="exp2-tab-link" href="#tab-exp2" role="tab" data-toggle="tab"><strong>Expt 2</strong></a></li>
-      <li><a id="exp3-tab-link" href="#tab-exp3" role="tab" data-toggle="tab"><strong>Expt 3</strong></a></li>
-    </ul>
-  </div>
-
-      <div class="tab-content">
-
-        <!-- First Pane -->
-        <div class="tab-pane active" id="tab-exp1">
-          <div id="cnv-container">
-		    <canvas id="canvas1" height="100%" width="100%" resize=true></canvas>
-		  </div>  
-        </div><!-- end First Pane -->
-        <!-- Second Pane -->
-        <div class="tab-pane" id="tab-exp2">
-          <div id="cnv-container">
-		    <canvas id="canvas2" height="100%" width="100%" resize=true></canvas>
-		  </div>  
-        </div><!-- end Second Pane -->
-        <!-- Third Pane -->
-        <div class="tab-pane" id="tab-exp3">
-          <div id="cnv-container">
-		    <canvas id="canvas3" height="100%" width="100%" resize=true></canvas>
-		  </div>  
-        </div><!-- end Third Pane -->
-
-      </div>
-
-    <script type="text/paperscript" canvas="canvas1" src="js/make_path_paper.js"></script>
-    <script type="text/paperscript" canvas="canvas2" src="js/move_tool_paper.js"></script>
-    <script type="text/paperscript" canvas="canvas3" src="js/evolve_robot_paper.js"></script>
+    <canvas id="riCanvas" resize></canvas> 
+    <script>console.log("loaded")</script>
 
     <script type="text/javascript">
         var fabmo = new FabMoDashboard();  // seem to need here, others not in scope?
@@ -62,8 +30,8 @@
 	      }, false);
  
         });
-    </script>
+     </script>
 
-</body>
+ </body>
 
 </html>
