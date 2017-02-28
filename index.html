@@ -12,7 +12,9 @@
     <script src="js/libs/jquery.confirm.min.js"></script>
     <script src="js/libs/fabmo.js"></script>
     <script type="text/javascript" src="js/paper/paper-full.js"></script>
-    <script type="text/paperscript" canvas="riCanvas" src="js/make_path_paper.js"></script>
+    <script type="text/paperscript" canvas="riCanvas" src="js/makepath.js"></script>
+    <script src="js/actions.js"></script>
+
  </head>
 
 <body>
@@ -21,14 +23,15 @@
     <script>console.log("loaded")</script>
 
     <script type="text/javascript">
-        var fabmo = new FabMoDashboard();  // seem to need here, others not in scope?
+        var fabmo = new FabMoDashboard(); //...need here for global?
         $(document).ready(function() {
-
-	      window.addEventListener("unload", function(e){ // Clear file ops, make abs on LOAD & UNLOAD
-	        var gcode = ['M30', 'G90'].join('\n');
-	        fabmo.runGCode(gcode);
-	      }, false);
- 
+            fabmo.requestStatus(); // Make sure we have start location
+            fabmo.runGCode('G90'); // On load set to absolute
+    	      // On unload, clear liveaction and make absolute
+            window.addEventListener("unload", function(e){
+  	          var gcode = ['M30', 'G90'].join('\n');
+  	          fabmo.runGCode(gcode);
+  	        }, false);
         });
      </script>
 

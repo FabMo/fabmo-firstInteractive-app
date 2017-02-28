@@ -11,48 +11,29 @@
         var len_here = 0;
         var smooth_pt = new Point();
 
+        var riScale = 2;
         var textItem1 = new PointText({
             content: 'Segment count/length: ',
-            point: new Point(20, 30),
+            point: new Point((20/riScale), (30/riScale)),
             fillColor: 'black',
         });
-        textItem1.scale(1,-1);
+        textItem1.scale((1/riScale), 1/(-1 * riScale));
         
         var textItem2 = new PointText({
             content: 'Tool Location: ',
-            point: new Point(300, 30),
+            point: new Point((300/riScale), (30/riScale)),
             fillColor: 'black',
         });
-        textItem2.scale(1,-1);
+        textItem2.scale((1/riScale), 1/(-1 * riScale));
 
-          fabmo.on('status', function(status) {
-            tool_x = status.posx;
-            tool_y = status.posy;
-            circle.position.x = tool_x * 50; 
-            circle.position.y = tool_y * 50; 
-            textItem2.content = 'Tool Location: ' + tool_x.toFixed(3) + ', ' + tool_y.toFixed(3);
-          });
 
-          fabmo.requestStatus();
+ //         fabmo.requestStatus();
 //          var circle = new Path.Circle((status.posx * 50),(status.posx * 50), 10);
           var circle = new Path.Circle(100,100, 10);
           circle.strokeColor = "red";
           // how to constrain the path of moves to not be at too great an angle
 view.center = circle.position;
-view.scale(2, -2);
-
-
-
-          fabmo.getConfig(function(err, cfg) {
-            try {
-              if(cfg.machine.envelope) {
-                //display.setExtents(cfg.machine.envelope);
-                //display.gotoExtents(1000);
-              }              
-            } catch(e) {
-              console.error(e);
-            }
-          });
+view.scale(riScale,-1 * riScale);
 
 
 
@@ -92,7 +73,7 @@ view.scale(2, -2);
                             path.smooth({ type: 'continuous', from: seg_ct, to: (seg_ct + 7)});
                             seg_ct += 8;
                             
-                            var dist_now = path.length - len_here;
+                            var dist_now = riScale * (path.length - len_here);
 
                             for (i = 0; i < 1; i += 0.1) {
                               smooth_pt = path.getPointAt(len_here + (i * dist_now));
@@ -131,3 +112,21 @@ view.scale(2, -2);
             var difference = segmentCount - newSegmentCount;
             var percentage = 100 - Math.round(newSegmentCount / segmentCount * 100);
         }
+//===========================ACTION FUNCTIONS
+    fabmo.on('status', function(status) {
+      tool_x = status.posx;
+      tool_y = status.posy;
+      circle.position.x = tool_x * 50; 
+      circle.position.y = tool_y * 50; 
+      textItem2.content = 'Tool Location: ' + tool_x.toFixed(3) + ', ' + tool_y.toFixed(3);
+    });
+    fabmo.getConfig(function(err, cfg) {
+      try {
+        if(cfg.machine.envelope) {
+          //display.setExtents(cfg.machine.envelope);
+          //display.gotoExtents(1000);
+        }              
+      } catch(e) {
+        console.error(e);
+      }
+    });
