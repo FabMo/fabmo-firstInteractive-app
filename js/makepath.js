@@ -1,4 +1,5 @@
         var fabmo = new FabMoDashboard();
+//        var riScope = new PaperScope();
         var path;
 
         var last_pos_x = 0, last_pos_y = 0;
@@ -14,6 +15,12 @@
         var riScale = 1;  //view scale for reach in
         var riUnit = 50;  //unit value pixels per
 
+        // - Bounding Box
+        var bRect = new Path.Rectangle({
+            point: new Point(20,20),
+            size: new Size((window.innerWidth -40), (window.innerHeight -40)),
+            strokeColor: 'blue',
+        });
         // - Create Text Info
         var textItem1 = new PointText({
             content: 'Segment count/length: ',
@@ -28,18 +35,18 @@
 //            point: new Point((300/riScale), (30/riScale)),
             fillColor: 'black',
         });
-        textItem2.scale((1/riScale), 1/(-1 * riScale));
+          textItem2.scale((1/riScale), 1/(-1 * riScale));
         var textItem3 = new PointText({
             content: 'Screen: ',
             point: new Point((20), (10)),
 //            point: new Point((20/riScale), (10/riScale)),
             fillColor: 'black',
         });
-        textItem3.scale((1/riScale), 1/(-1 * riScale));
+          textItem3.scale((1/riScale), 1/(-1 * riScale));
 
         // - Setup Motion
         var circle = new Path.Circle(100,100, 10); //{seem to have to start with loc here}
-        circle.strokeColor = 'red';
+          circle.strokeColor = 'red';
 
         //view.center = circle.position;
         view.scale(riScale,-1 * riScale);
@@ -116,6 +123,9 @@
             var percentage = 100 - Math.round(newSegmentCount / segmentCount * 100);
         }
 //===========================ACTION FUNCTIONS
+    view.onResize = function(event) {
+        bRect.scale = view.scale;
+    }
     fabmo.on('status', function(status) {
       tool_x = status.posx;
       tool_y = status.posy;
@@ -136,5 +146,6 @@
 //--------------------------ready!
     $(document).ready(function() {
         fabmo.requestStatus(); // Make sure we have start location
-        textItem3.content = 'Screen: ' + viewSize;
+    //    textItem3.content = 'Screen: ' + riScope.viewSize.size;
+    console.log("style - ", project.currentStyle.fillColor);
     });
