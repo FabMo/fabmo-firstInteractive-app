@@ -11,38 +11,44 @@
         var len_here = 0;
         var smooth_pt = new Point();
 
-        var riScale = 2;
+        var riScale = 1;  //view scale for reach in
+        var riUnit = 50;  //unit value pixels per
+
+        // - Create Text Info
         var textItem1 = new PointText({
             content: 'Segment count/length: ',
-            point: new Point((20/riScale), (30/riScale)),
+            point: new Point((20), (30)),
+//            point: new Point((20/riScale), (30/riScale)),
             fillColor: 'black',
         });
         textItem1.scale((1/riScale), 1/(-1 * riScale));
-        
         var textItem2 = new PointText({
             content: 'Tool Location: ',
-            point: new Point((300/riScale), (30/riScale)),
+            point: new Point((250), (30)),
+//            point: new Point((300/riScale), (30/riScale)),
             fillColor: 'black',
         });
         textItem2.scale((1/riScale), 1/(-1 * riScale));
+        var textItem3 = new PointText({
+            content: 'Screen: ',
+            point: new Point((20), (10)),
+//            point: new Point((20/riScale), (10/riScale)),
+            fillColor: 'black',
+        });
+        textItem3.scale((1/riScale), 1/(-1 * riScale));
 
+        // - Setup Motion
+        var circle = new Path.Circle(100,100, 10); //{seem to have to start with loc here}
+        circle.strokeColor = 'red';
 
- //         fabmo.requestStatus();
-//          var circle = new Path.Circle((status.posx * 50),(status.posx * 50), 10);
-          var circle = new Path.Circle(100,100, 10);
-          circle.strokeColor = "red";
-          // how to constrain the path of moves to not be at too great an angle
-view.center = circle.position;
-view.scale(riScale,-1 * riScale);
-
-
+        //view.center = circle.position;
+        view.scale(riScale,-1 * riScale);
 
         function onMouseDown(event) {
             // If we produced a path before, deselect it:
             if (path) {
                 path.selected = false;
             }
-
             // Create a new path and set its stroke color to black:
             path = new Path({
                 segments: [event.point],
@@ -73,13 +79,12 @@ view.scale(riScale,-1 * riScale);
                             path.smooth({ type: 'continuous', from: seg_ct, to: (seg_ct + 7)});
                             seg_ct += 8;
                             
-                            var dist_now = riScale * (path.length - len_here);
+                            var dist_now = (path.length - len_here);
 
                             for (i = 0; i < 1; i += 0.1) {
                               smooth_pt = path.getPointAt(len_here + (i * dist_now));
                               fabmo.livecodeStart((smooth_pt.x * 0.02), (smooth_pt.y * 0.02),(err));
                             }
-                            //console.log("**nextLoc ", to_x, to_y, pt_ct, seg_ct, m_rate);
 
                             len_here = path.length;
                           }
@@ -90,7 +95,6 @@ view.scale(riScale,-1 * riScale);
             // segments it has:
             textItem1.content = 'Segment count/length: ' + path.segments.length + ' / ' + path.length.toFixed(3);
         }
-
 
         // When the mouse is released, we simplify the path:
         function onMouseUp(event) {
@@ -107,7 +111,6 @@ view.scale(riScale,-1 * riScale);
 
             // Select the path, so we can see its segments:
             path.fullySelected = true;
-
             var newSegmentCount = path.segments.length;
             var difference = segmentCount - newSegmentCount;
             var percentage = 100 - Math.round(newSegmentCount / segmentCount * 100);
@@ -129,4 +132,9 @@ view.scale(riScale,-1 * riScale);
       } catch(e) {
         console.error(e);
       }
+    });
+//--------------------------ready!
+    $(document).ready(function() {
+        fabmo.requestStatus(); // Make sure we have start location
+        textItem3.content = 'Screen: ' + viewSize;
     });
