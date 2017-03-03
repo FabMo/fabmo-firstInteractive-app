@@ -125,7 +125,8 @@
 //===========================ACTION FUNCTIONS
 //---------------------------drawing
     view.onResize = function(event) {
-        bRect.scale = view.scale;
+        //view.setViewSize();
+        //bRect.scale = view.scale;
         console.log("getting resize - " + view.scale);
     }
 //---------------------------fabmo
