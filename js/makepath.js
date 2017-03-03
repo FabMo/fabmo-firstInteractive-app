@@ -123,9 +123,12 @@
             var percentage = 100 - Math.round(newSegmentCount / segmentCount * 100);
         }
 //===========================ACTION FUNCTIONS
+//---------------------------drawing
     view.onResize = function(event) {
         bRect.scale = view.scale;
+        console.log("getting resize - " + view.scale);
     }
+//---------------------------fabmo
     fabmo.on('status', function(status) {
       tool_x = status.posx;
       tool_y = status.posy;
