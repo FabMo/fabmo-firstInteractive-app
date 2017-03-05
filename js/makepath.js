@@ -11,45 +11,53 @@
         var pt_ct = 0, seg_ct = 0, next_ct = 0;
         var len_here = 0;
         var smooth_pt = new Point();
+        var min_margin = 20;
 
         var riScale = 1;  //view scale for reach in
         var riUnit = 50;  //unit value pixels per
 
         // - Bounding Box
-        var bRect = new Path.Rectangle({
-            point: new Point(20,20),
-            size: new Size((window.innerWidth -40), (window.innerHeight -40)),
-            strokeColor: 'blue',
-        });
+        var startSize = new Size(view.size);
+  console.log("startSize - " + startSize);
+
+        var defwrk = new Rectangle(min_margin,min_margin,300,400)
+        var bbox = new Path.Rectangle(defwrk);
+        bbox.strokeColor = 'blue';
+
         // - Create Text Info
         var textItem1 = new PointText({
             content: 'Segment count/length: ',
             point: new Point((20), (30)),
 //            point: new Point((20/riScale), (30/riScale)),
-            fillColor: 'black',
+            fillColor: 'black'
         });
         textItem1.scale((1/riScale), 1/(-1 * riScale));
         var textItem2 = new PointText({
             content: 'Tool Location: ',
             point: new Point((250), (30)),
 //            point: new Point((300/riScale), (30/riScale)),
-            fillColor: 'black',
+            fillColor: 'black'
         });
           textItem2.scale((1/riScale), 1/(-1 * riScale));
         var textItem3 = new PointText({
             content: 'Screen: ',
             point: new Point((20), (10)),
 //            point: new Point((20/riScale), (10/riScale)),
-            fillColor: 'black',
+            fillColor: 'black'
         });
           textItem3.scale((1/riScale), 1/(-1 * riScale));
 
-        // - Setup Motion
+        // - Setup for tool Motion
         var circle = new Path.Circle(100,100, 10); //{seem to have to start with loc here}
           circle.strokeColor = 'red';
 
         //view.center = circle.position;
         view.scale(riScale,-1 * riScale);
+
+//---------------------------Start Action
+        //onResize();
+
+
 
         function onMouseDown(event) {
             // If we produced a path before, deselect it:
@@ -124,10 +132,18 @@
         }
 //===========================ACTION FUNCTIONS
 //---------------------------drawing
-    view.onResize = function(event) {
+    function onResize () {
+        var newSize = new Size(view.size);
+        var reSize = new Size(newSize/startSize);
+        bbox.scale(reSize, view.center);
+        startSize = newSize;
+//      bbox.point = [min_margin, (view.bounds.height + min_margin)];
+//      bbox.size = [(view.bounds.width - (2*min_margin)), (view.bounds.height - (2*min_margin))];
         //view.setViewSize();
         //bRect.scale = view.scale;
-        console.log("getting resize - " + view.scale);
+        console.log("resize,center - " + newSize + ", " + reSize + ", " + view.center);
+//        console.log(bbox);
+        console.log("details - " + bbox.position + ", " + bbox.bounds);
     }
 //---------------------------fabmo
     fabmo.on('status', function(status) {
@@ -149,6 +165,7 @@
     });
 //--------------------------ready!
     $(document).ready(function() {
+        onResize();   
         fabmo.requestStatus(); // Make sure we have start location
     //    textItem3.content = 'Screen: ' + riScope.viewSize.size;
     console.log("style - ", project.currentStyle.fillColor);
