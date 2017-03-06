@@ -136,6 +136,7 @@
         var newSize = new Size(view.size);
         var reSize = new Size(newSize/startSize);
         bbox.scale(reSize, view.center);
+        bbox.position = view.center;
         startSize = newSize;
 //      bbox.point = [min_margin, (view.bounds.height + min_margin)];
 //      bbox.size = [(view.bounds.width - (2*min_margin)), (view.bounds.height - (2*min_margin))];
