@@ -11,18 +11,30 @@
         var pt_ct = 0, seg_ct = 0, next_ct = 0;
         var len_here = 0;
         var smooth_pt = new Point();
-        var min_margin = 20;
+
+        var tool_width = 6;   // hard code for handibot at moment
+        var tool_height = 8;
+        var min_margin = 10;
 
         var riScale = 1;  //view scale for reach in
         var riUnit = 50;  //unit value pixels per
 
-        // - Bounding Box
+        // - Bounding Box Representing Work Area
         var startSize = new Size(view.size);
   console.log("startSize - " + startSize);
-
-        var defwrk = new Rectangle(min_margin,min_margin,300,400)
+        if ((view.viewSize.height / view.viewSize.width) > (tool_height / tool_width)) {
+          var bheight = (view.viewSize.height - (2 * min_margin)) / tool_height;
+          var bwidth = (view.viewSize.width - (2 * min_margin)) / tool_height;
+  console.log("ab" + bheight +", " + bwidth)
+ 
+        } else {
+          var bheight = (view.viewSize.height - (2 * min_margin)) / tool_width;
+          var bwidth = (view.viewSize.width - (2 * min_margin)) / tool_width;
+  console.log("bb" + bheight +", " + bwidth)
+        }
+        var defwrk = new Rectangle(min_margin,min_margin, bwidth, bheight)
         var bbox = new Path.Rectangle(defwrk);
-        bbox.strokeColor = 'blue';
+        bbox.strokeColor = 'lightgrey';
 
         // - Create Text Info
         var textItem1 = new PointText({
@@ -134,17 +146,13 @@
 //---------------------------drawing
     function onResize () {
         var newSize = new Size(view.size);
-        var reSize = new Size(newSize/startSize);
-        bbox.scale(reSize, view.center);
+//        var reSize = new Size(newSize/startSize);
+        bbox.scale(newSize/startSize);
+//        bbox.scale(reSize);
         bbox.position = view.center;
         startSize = newSize;
-//      bbox.point = [min_margin, (view.bounds.height + min_margin)];
-//      bbox.size = [(view.bounds.width - (2*min_margin)), (view.bounds.height - (2*min_margin))];
-        //view.setViewSize();
-        //bRect.scale = view.scale;
-        console.log("resize,center - " + newSize + ", " + reSize + ", " + view.center);
-//        console.log(bbox);
-        console.log("details - " + bbox.position + ", " + bbox.bounds);
+        console.log("resize,center - " + startSize + ", " + newSize + ", " + view.center);
+        console.log("position, bounds, scaling - " + bbox.position + ", " + bbox.bounds + " ," + bbox.scaling);
     }
 //---------------------------fabmo
     fabmo.on('status', function(status) {
