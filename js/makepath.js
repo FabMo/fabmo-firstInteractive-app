@@ -12,28 +12,18 @@
         var len_here = 0;
         var smooth_pt = new Point();
 
-        var tool_width = 6;   // hard code for handibot at moment
+        var tool_width = 6;                      // hard code size for handibot at moment
         var tool_height = 8;
+        var tool_prop = tool_height / tool_width;
         var min_margin = 10;
 
-        var riScale = 1;  //view scale for reach in
-        var riUnit = 50;  //unit value pixels per
+        var riScale = 1;                         // view scale for reach in
+        var riUnit = 50;                         // unit value pixels per
 
-        // - Bounding Box Representing Work Area
-        var startSize = new Size(view.size);
-  console.log("startSize - " + startSize);
-        if ((view.viewSize.height / view.viewSize.width) > (tool_height / tool_width)) {
-          var bheight = (view.viewSize.height - (2 * min_margin)) / tool_height;
-          var bwidth = (view.viewSize.width - (2 * min_margin)) / tool_height;
-  console.log("ab" + bheight +", " + bwidth)
- 
-        } else {
-          var bheight = (view.viewSize.height - (2 * min_margin)) / tool_width;
-          var bwidth = (view.viewSize.width - (2 * min_margin)) / tool_width;
-  console.log("bb" + bheight +", " + bwidth)
-        }
-        var defwrk = new Rectangle(min_margin,min_margin, bwidth, bheight)
-        var bbox = new Path.Rectangle(defwrk);
+        // - Set Starting View of Tool Work Area
+        var fullview = new Rectangle();  
+        var bbox = new Path.Rectangle([0, 0, tool_width, tool_height]); // sets scale
+        bbox.position = view.center;
         bbox.strokeColor = 'lightgrey';
 
         // - Create Text Info
@@ -43,28 +33,29 @@
 //            point: new Point((20/riScale), (30/riScale)),
             fillColor: 'black'
         });
-        textItem1.scale((1/riScale), 1/(-1 * riScale));
+        // textItem1.scale((1/riScale), 1/(-1 * riScale));
         var textItem2 = new PointText({
             content: 'Tool Location: ',
             point: new Point((250), (30)),
 //            point: new Point((300/riScale), (30/riScale)),
             fillColor: 'black'
         });
-          textItem2.scale((1/riScale), 1/(-1 * riScale));
+        //  textItem2.scale((1/riScale), 1/(-1 * riScale));
+          var anchor2 = new Point((250),(30));
         var textItem3 = new PointText({
             content: 'Screen: ',
             point: new Point((20), (10)),
 //            point: new Point((20/riScale), (10/riScale)),
             fillColor: 'black'
         });
-          textItem3.scale((1/riScale), 1/(-1 * riScale));
+        //  textItem3.scale((1/riScale), 1/(-1 * riScale));
 
         // - Setup for tool Motion
         var circle = new Path.Circle(100,100, 10); //{seem to have to start with loc here}
           circle.strokeColor = 'red';
 
         //view.center = circle.position;
-        view.scale(riScale,-1 * riScale);
+//        view.scale(riScale,-1 * riScale);
 
 //---------------------------Start Action
         //onResize();
@@ -145,14 +136,48 @@
 //===========================ACTION FUNCTIONS
 //---------------------------drawing
     function onResize () {
-        var newSize = new Size(view.size);
-//        var reSize = new Size(newSize/startSize);
-        bbox.scale(newSize/startSize);
-//        bbox.scale(reSize);
+//         var newSize = new Size(view.size);
+// //        var reSize = new Size(newSize/startSize);
+//         bbox.scale(newSize/startSize);
+// //        bbox.scale(reSize);
+//         bbox.position = view.center;
+//         startSize = newSize;
+//         console.log("resize,center - " + startSize + ", " + newSize + ", " + view.center);
+//         console.log("position, bounds, scaling - " + bbox.position + ", " + bbox.bounds + " ," + bbox.scaling);
+
+
+  //       if ((view.viewSize.height / view.viewSize.width) < tool_prop) {
+  //         defwrk.height = view.viewSize.height - (2 * min_margin);
+  //         defwrk.width = defwrk.height / tool_prop; 
+  // console.log("za " + defwrk.height +", " + defwrk.width);
+  //       } else {
+  //         defwrk.width = view.viewSize.width - (2 * min_margin);
+  //         defwrk.height = defwrk.width * tool_prop;
+  // console.log("zb " + defwrk.height +", " + defwrk.width);
+  //       }
+  //       //var defwrk = new Rectangle(min_margin,min_margin, bwidth, bheight)
+  //       bbox = Path.Rectangle(defwrk);
+  // console.log("zdef " + defwrk);
+  //       bbox.position = view.center;
+
+        // - Bounding Box Representing Work Area
+//        var startSize = new Size(view.size);
+        var bwidth, bheight;
+//  console.log("startSize - " + startSize);
+//        if ((view.viewSize.height / view.viewSize.width) < tool_prop) {
+          bheight = view.viewSize.height - (2 * min_margin);
+//          bwidth = bheight / tool_prop; 
+//  console.log("ab " + bheight +", " + bwidth);
+//        } else {
+          bwidth = view.viewSize.width - (2 * min_margin);
+        defwrk = [min_margin, min_margin, bwidth, bheight];
+        bbox.fitBounds(defwrk);
         bbox.position = view.center;
-        startSize = newSize;
-        console.log("resize,center - " + startSize + ", " + newSize + ", " + view.center);
-        console.log("position, bounds, scaling - " + bbox.position + ", " + bbox.bounds + " ," + bbox.scaling);
+  console.log("ab " +textItem1.position + ", " + textItem2.position + ", " + view.bounds);
+
+
+
+
     }
 //---------------------------fabmo
     fabmo.on('status', function(status) {
@@ -177,5 +202,5 @@
         onResize();   
         fabmo.requestStatus(); // Make sure we have start location
     //    textItem3.content = 'Screen: ' + riScope.viewSize.size;
-    console.log("style - ", project.currentStyle.fillColor);
+    console.log("style - ", paper.project.currentStyle.fillColor);
     });
