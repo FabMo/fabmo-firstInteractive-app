@@ -1,7 +1,7 @@
         var fabmo = new FabMoDashboard();
         var path;
 
-        var tool_x, tool_y;                      // position and tracking
+        var tool_x, tool_y;                      // global position and tracking
         var last_pos_x = 0, last_pos_y = 0;
         var pos, smooth_pt1, smooth_pt2;
 
@@ -129,10 +129,37 @@
       bbox.fitBounds(defwrk);  // use rect defwrk to re-define scaling
       bbox.position = view.center;
       riUnit = bbox.bounds.height / 8;
+//      circle.position.x = bbox.bounds.left + (tool_x * riUnit); 
+//      circle.position.y = bbox.bounds.bottom - (tool_y * riUnit); 
       textItem3.content = 'Screen: ' + view.viewSize.width.toFixed(1) + ', ' + view.viewSize.height.toFixed(1);
-  console.log("riUnit, bounds  " + riUnit + ", " + bbox.bounds);
+      console.log("tool  " + status.posx + ", " + status.posy);
     }
 //---------------------------fabmo
+    // fabmo.on('status', function(status) {
+    //   tool_x = status.posx;
+    //   tool_y = status.posy;
+    //   circle.position.x = bbox.bounds.left + (tool_x * riUnit); 
+    //   circle.position.y = bbox.bounds.bottom - (tool_y * riUnit); 
+    //   textItem2.content = 'Tool Location: ' + tool_x.toFixed(3) + ', ' + tool_y.toFixed(3);
+    // });
+    // fabmo.getConfig(function(err, cfg) {
+    //   try {
+    //     if(cfg.machine.envelope) {
+    //       console.log(cfg.machine.envelope)
+    //       //display.setExtents(cfg.machine.envelope);
+    //       //display.gotoExtents(1000);
+    //     }              
+    //   } catch(e) {
+    //     console.error(e);
+    //   }
+    // });
+//--------------------------ready!
+    $(document).ready(function() {
+        onResize();   
+        fabmo.requestStatus(); // Make sure we have start location
+    //    textItem3.content = 'Screen: ' + riScope.viewSize.size;
+    console.log("style - ", paper.project.currentStyle.fillColor);
+
     fabmo.on('status', function(status) {
       tool_x = status.posx;
       tool_y = status.posy;
@@ -143,6 +170,7 @@
     fabmo.getConfig(function(err, cfg) {
       try {
         if(cfg.machine.envelope) {
+          console.log(cfg.machine.envelope)
           //display.setExtents(cfg.machine.envelope);
           //display.gotoExtents(1000);
         }              
@@ -150,10 +178,6 @@
         console.error(e);
       }
     });
-//--------------------------ready!
-    $(document).ready(function() {
-        onResize();   
-        fabmo.requestStatus(); // Make sure we have start location
-    //    textItem3.content = 'Screen: ' + riScope.viewSize.size;
-    console.log("style - ", paper.project.currentStyle.fillColor);
+
+
     });
