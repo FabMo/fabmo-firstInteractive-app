@@ -101,7 +101,6 @@
                             }
                             len_here = path.length;
                           }
-  
                       }          
             textItem1.content = 'Segment count/length: ' + path.segments.length + ' / ' + path.length.toFixed(3);
         }
@@ -139,8 +138,13 @@
       var lastScale = bbox.scaling.x;              // Get current scale from box transform
       var bsize = new Size(bwidth, bheight);       // Resize, then poistion Box 
       bbox.bounds = bsize;                         
-      bbox.position = view.center;
-
+      if (riScale > 1) {
+        var re_center = new Point(circle.position-view.center);
+        circle.position -= re_center;
+        bbox.position -= re_center;
+      } else {
+        bbox.position = view.center;
+      }
       var startPos = new Point(circle.position);   // Current pos of marker
       riUnit = bbox.bounds.height / tool_height;   // Get ratio for Units to screen 
       var scaleUnit = bbox.scaling.x / lastScale;  // Get reposition delta (for mark and path)
@@ -154,8 +158,21 @@
         path.scale(scaleUnit, startPos); 
         path.position += new Point ([dX, dY]);
       }
-      textItem3.content = 'Screen: ' + view.viewSize.width.toFixed(1) + ', ' + view.viewSize.height.toFixed(1);
+      textItem3.content = 'Screen: ' + view.viewSize.width.toFixed(1) + ', ' + view.viewSize.height.toFixed(1) +
+        "         ZOOM: " + riScale.toFixed(2);
     }
+
+    $('#riCanvas').on('mousewheel DOMMouseScroll MozMousePixelScroll', function(event){ 
+        if (event.originalEvent.wheelDelta >= 0) {
+            if(riScale > 10) return false;
+            riScale += 0.1;
+        }
+        else {
+            if(riScale <0.1) return false;
+            riScale -= 0.1;
+        }
+      onResize();                                  // Update  
+    });
 
 //---------------------------fabmo
     fabmo.on('status', function(status) {
