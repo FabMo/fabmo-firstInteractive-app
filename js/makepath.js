@@ -127,7 +127,7 @@
 //===========================ACTION FUNCTIONS
 //---------------------------drawing
     function onResize () {
-      // - Update Area Bounding Box and Tool Markers ...
+    // - Update Area Bounding Box and Tool Markers ...
       if ((view.viewSize.height / view.viewSize.width) < tool_prop) {   // scale by X or Y
         bheight = view.viewSize.height * riScale;
         bwidth = (view.viewSize.height / tool_prop) * riScale;
@@ -139,7 +139,8 @@
       var bsize = new Size(bwidth, bheight);       // Resize, then poistion Box 
       bbox.bounds = bsize;                         
       if (riScale > 1) {
-        var re_center = new Point(circle.position-view.center);
+        bbox.position = view.center;
+        var re_center = new Point(circle.position - view.center);
         circle.position -= re_center;
         bbox.position -= re_center;
       } else {
@@ -162,13 +163,14 @@
         "         ZOOM: " + riScale.toFixed(2);
     }
 
+    // - Deal with ZOOM by mousewheel
     $('#riCanvas').on('mousewheel DOMMouseScroll MozMousePixelScroll', function(event){ 
         if (event.originalEvent.wheelDelta >= 0) {
             if(riScale > 10) return false;
             riScale += 0.1;
         }
         else {
-            if(riScale <0.1) return false;
+            if(riScale < 0.1) return false;
             riScale -= 0.1;
         }
       onResize();                                  // Update  
