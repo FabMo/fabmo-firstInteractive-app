@@ -127,48 +127,34 @@
 //===========================ACTION FUNCTIONS
 //---------------------------drawing
     function onResize () {
-    // - Update Area Bounding Box and Tool Markers ...
-      // #1> first decide on X or Y as constraining shape
-      if ((view.viewSize.height / view.viewSize.width) < tool_prop) {   // scale by X or Y
+    // - Update WorkArea Bounding-Box and Tool Markers ...
+      // (complicated by inversion of tool location and handling of various elements)
+      if ((view.viewSize.height / view.viewSize.width) < tool_prop) {   // bound by X or Y
         bheight = view.viewSize.height * riScale;
         bwidth = (view.viewSize.height / tool_prop) * riScale;
       } else {
         bheight = view.viewSize.width * riScale;
         bwidth = (view.viewSize.width / tool_prop) * riScale;
       }  
-      var lastScale = bbox.scaling.x;              // Get current scale from box transform
-      // #2> then resize
-      var bsize = new Size(bwidth, bheight);       // Resize, then poistion Box 
+      var lastScale = bbox.scaling.x;              // Get current scale (transform)
+      var bsize = new Size(bwidth, bheight);       // Basic RESIZE of B-Box 
       bbox.bounds = bsize;                         
-        riUnit = bbox.bounds.height / tool_height;   // Get ratio for Units to screen 
-    
-      // #3> reposition, small is easy ... just center
-console.log("now re-positioning: ", circle.position,  " ; ", bbox.position);
-       if (riScale > 1) {
-         //.box is resized we now want to move to that it's center is off by dist circle from center
-         bbox.position.x = view.center.x - ((globals.tool_x * riUnit) - (bwidth/2)); 
-console.log("view, bwidth, tool_x, riUnit; " + view.center.x + "," + bwidth + "," + globals.tool_x + "," + riUnit);
-         bbox.position.y = view.center.y + ((globals.tool_y * riUnit) - (bheight/2)); 
-         //var re_center = new Point(circle.position - view.center);
-       } else {
-         bbox.position = view.center;
-       }
-      
-      // #5> now reposition tool circle ... figure where we are
-      var startPos = new Point(circle.position);   // Current pos of marker
-      // #6> and determine the position units for this new size box
-//      riUnit = bbox.bounds.height / tool_height;   // Get ratio for Units to screen 
-      // #7> then see how much box was scaled in this change (resize change + zoom change??)
-      var scaleUnit = bbox.scaling.x / lastScale;  // Get reposition delta (for mark and path)
-      // #8> and compute amount that position needs to change to keep up with box
+      riUnit = bbox.bounds.height / tool_height;   // Get ratio for Units to screen to REPOSITION B-Box 
+      if (riScale > 1) {                           // If smaller (center) vs Zoom out (center on tool)
+        bbox.position.x = view.center.x - ((globals.tool_x * riUnit) - (bwidth/2)); 
+        bbox.position.y = view.center.y + ((globals.tool_y * riUnit) - (bheight/2)); 
+      } else {
+        bbox.position = view.center;
+      }
+      var startPos = new Point(circle.position);   // REPOSITION Tool Marker, from current pos
+      var scaleUnit = bbox.scaling.x / lastScale;  // Get reposition delta (for mark and path), based on B-Box
       var dX = bbox.bounds.left + (globals.tool_x * riUnit) - circle.position.x; 
       var dY = bbox.bounds.bottom - (globals.tool_y * riUnit) - circle.position.y; 
-      // #9> POSITION tool circle with this new data
       circle.position += new Point([dX,dY]);
       for (var i = start_child; i < (children.length - 1); i++) {
         children[i].remove();                      // Remove old paths
       }
-      if (path){                                   // Update size and loc of current path
+      if (path){                                   // Update size and loc of LAST TOOL PATH
         path.scale(scaleUnit, startPos); 
         path.position += new Point ([dX, dY]);
       }
@@ -178,16 +164,18 @@ console.log("view, bwidth, tool_x, riUnit; " + view.center.x + "," + bwidth + ",
 
     // - Deal with ZOOM by mousewheel
     $('#riCanvas').on('mousewheel DOMMouseScroll MozMousePixelScroll', function(event){ 
+        var zoomScale = 0.1;                       // Smooth scaling a bit
+        if (riScale > 1.2) zoomScale = 0.2;
+        if (riScale < 0.8) zoomScale = 0.05;
         if (event.originalEvent.wheelDelta > 0) {
             if(riScale > 10) return false;
-            riScale += 0.1;
+            riScale += zoomScale;
         }
         else {
             if(riScale < 0.1) return false;
-            riScale -= 0.1;
+            riScale -= zoomScale;
         }
-console.log("wheel = " + event.originalEvent.wheelDelta + "," + riScale)
-      onResize();                                  // Update  
+      onResize();  
     });
 
 //---------------------------fabmo

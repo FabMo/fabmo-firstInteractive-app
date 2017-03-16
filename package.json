@@ -1,5 +1,5 @@
 {
-	"name":"firstReachIn",
+	"name":"REACH-In",
 	"author":"Ryan Sturmer (innspired by Touch&Go) + TH",
 	"main":"./index.html",
 	"license":"Apache2",
@@ -9,7 +9,7 @@
 	"version":"0.1.5",
 	"website":"http://www.handibot.com",
 	"description":"FirstREACH interactive ...",
-	"id":"fabmo-firstreachin",
+	"id":"fabmo-reach-in",
 	"devDependencies": {
 	    "grunt": "^0.4.5",
 	    "grunt-zip": "^0.17.1"
