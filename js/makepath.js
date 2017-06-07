@@ -57,6 +57,23 @@
 
         //view.center = circle.position;
 
+
+        // - some stuff ...
+        var aCircle = new Path.Circle({
+            center: view.center,
+            radius: 3,
+            fillColor: 'red'
+        });
+        var center = new Point(250, 250);
+        var points = 5;
+        var radius1 = 45;
+        var radius2 = 60;
+        var aStar = new Path.Star(center, points, radius1, radius2);
+        aStar.strokeWidth = 2;
+        aStar.strokeColor = 'black';
+
+
+
 //--------------------------- App Actions
 
         var children = project.activeLayer.children;
@@ -78,7 +95,17 @@
 
         // Dragging mouse adds points to path
         function onMouseDrag(event) {
-                      pos = event.point;
+        
+                          // Get the nearest point from the mouse position
+                          // to the star shaped path:
+                          var nearestPoint = aStar.getNearestPoint(event.point);
+
+                          // Move the red circle to the nearest point:
+                          aCircle.position = nearestPoint;
+
+                      pos = aCircle.position;
+
+    //                  pos = event.point;
                       m_rate = event.delta.length;
                       var to_x = pos.x;
                       var to_y = pos.y;
