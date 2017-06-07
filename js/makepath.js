@@ -58,19 +58,19 @@
         //view.center = circle.position;
 
 
-        // - some stuff ...
-        var aCircle = new Path.Circle({
-            center: view.center,
-            radius: 3,
-            fillColor: 'red'
-        });
-        var center = new Point(250, 250);
-        var points = 5;
-        var radius1 = 45;
-        var radius2 = 60;
-        var aStar = new Path.Star(center, points, radius1, radius2);
-        aStar.strokeWidth = 2;
-        aStar.strokeColor = 'black';
+        // // - some stuff ...
+        // var aCircle = new Path.Circle({     //circle as tracing marker
+        //     center: view.center,
+        //     radius: 3,
+        //     fillColor: 'red'
+        // });
+        // var center = new Point(250, 250);   //star as "follow" example object
+        // var points = 5;
+        // var radius1 = 45;
+        // var radius2 = 60;
+        // var aStar = new Path.Star(center, points, radius1, radius2);
+        // aStar.strokeWidth = 2;
+        // aStar.strokeColor = 'black';
 
 
 
@@ -90,22 +90,97 @@
                 fullySelected: true
             });
         //children = project.activeLayer.children;
-        console.log("num children - ", children.length, start_child, children.length - 1);
+    console.log("num children - ", children.length, start_child, children.length - 1);
         }
+
+
+    // If the Leap Motion library is available, set up our
+    // Leap loop. Will only be called if a controller is
+    // available, though
+    if (typeof Leap !== "undefined")
+    {
+      // Setup Leap loop with frame callback function
+      Leap.loop(function (frame) {
+        // We just want to get the first hand
+        if (frame.hands.length > 0) {
+            path = new Path({
+                segments: [event.point],
+                strokeColor: 'black',
+                // Select the path, so we can see its segment points:
+                fullySelected: true
+            });
+
+
+          var hand = frame.hands[0];
+
+          // Define the size of the ball based on the height of
+          // the hand
+//          ballSize = hand.sphereCenter[1] * 3;
+
+          // And we set the location of the ball - relative to
+          // the center of the view - based on the position of the
+          // hand in Leap space
+
+          fingerPos =
+            new Point(
+              hand.sphereCenter[0] * 4 + view.size.width / 2,
+              hand.sphereCenter[2] * 4 + view.size.height / 2
+            );
+var stabilized = hand.stabilizedPalmPosition;
+    console.debug('finger> ' + fingerPos + ',    stabilized> ' + stabilized);
+var delta = Leap.vec3.create();
+Leap.vec3.subtract(delta, stabilized, hand.palmPosition);
+console.debug("Difference between palm and stabilized palm positions: " + delta);
+
+
+                      pos = fingerPos;
+//                      m_rate = event.delta.length;
+                      m_rate = 20;
+                      var to_x = pos.x;
+                      var to_y = pos.y;
+                      if (Math.abs(to_x - last_pos_x) > (m_rate) || Math.abs(to_y - last_pos_y) > (m_rate)) {
+                        last_pos_x = to_x;
+                        last_pos_y = to_y;
+                        path.add(pos)
+                        pt_ct++;
+  
+                          if (pt_ct > 2* m_rate) {
+                            pt_ct = 0;
+                            path.smooth({ type: 'continuous', from: seg_ct, to: (seg_ct + 7)});
+                            seg_ct += 8;
+                            
+                            var dist_now = (path.length - len_here);
+                            for (i = 0; i < 1; i += 0.1) {
+                              smooth_pt = path.getPointAt(len_here + (i * dist_now));
+//                              console.log(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
+                              fabmo.livecodeStart(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
+                            }
+                            len_here = path.length;
+                          }
+                      }          
+//            textItem1.content = 'Segment count/length: ' + path.segments.length + ' / ' + path.length.toFixed(3);
+
+
+
+        }
+      })
+    } 
+
+
+
+
 
         // Dragging mouse adds points to path
         function onMouseDrag(event) {
         
-                          // Get the nearest point from the mouse position
-                          // to the star shaped path:
-                          var nearestPoint = aStar.getNearestPoint(event.point);
+                          // // Get the nearest point from the mouse position to tracing target
+                          // var nearestPoint = aStar.getNearestPoint(event.point);
+                          // // Move the red circle to the nearest point:
+                          // aCircle.position = nearestPoint;
+                          // // and make it tool position
+                          // pos = aCircle.position;
 
-                          // Move the red circle to the nearest point:
-                          aCircle.position = nearestPoint;
-
-                      pos = aCircle.position;
-
-    //                  pos = event.point;
+                      pos = event.point;
                       m_rate = event.delta.length;
                       var to_x = pos.x;
                       var to_y = pos.y;
