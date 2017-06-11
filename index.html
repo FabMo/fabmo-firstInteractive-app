@@ -24,12 +24,16 @@
         var fabmo = new FabMoDashboard(); //...need here for global?
         $(document).ready(function() {
 //            fabmo.requestStatus(); // Make sure we have start location
-            fabmo.runGCode('G90'); // On load set to absolute
-    	      // On unload, clear liveaction and make absolute
+            //fabmo.runGCode('G90'); // On load set to absolute
+
+            // On unload, clear liveaction and make absolute
             window.addEventListener("unload", function(e){
-  	          var gcode = ['M30', 'G90'].join('\n');
-  	          fabmo.runGCode(gcode);
-  	        }, false);
+            console.log("unloaded!")        
+              //var gcode = ['M30', 'G90'].join('\n');
+              //fabmo.runGCode(gcode);
+              fabmo.livecodeStop();         // *** DOES THIS GET US AN M30? ***
+            }, false);
+
         });
     </script>
 

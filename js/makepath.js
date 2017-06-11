@@ -5,12 +5,16 @@
     //someFunction: function() { alert(globals.someValue); }
   }
 
+  riTool = new Tool();                       // @th needed this to access keys, related to paperjs??
+                                             // ... not understanding general issues in getting EVENTS
+
     var fabmo = new FabMoDashboard();        // seem to need a fabmo inside paperScope
     var path;
     var start_child = 5;                     // count for number of paths to remove on resize
                                              // ... start at 5 a kludge to prevent premature erase
     var last_pos_x = 0, last_pos_y = 0;
-    var pos, smooth_pt1, smooth_pt2;
+    var smooth_pt1, smooth_pt2;
+    var pos = new Point();
 
     var err;
     var m_rate;
@@ -24,6 +28,12 @@
 
     var riScale = 0.95;                      // view scale for zoom
     var riUnit = 45;                         // unit value pixels per
+
+    var ptStart = new Point(0,0);
+    var ptLast = new Point(0,0);
+    var ptNew = new Point(0,0);
+    var mouse_DN = false;
+    var v1 = new Point(0,0);
 
         // - Set Starting View of Tool Work Area
         var bbox = new Path.Rectangle([0, 0, tool_width, tool_height]); // sets scale
@@ -51,12 +61,13 @@
             fillColor: 'black'
         });
 
+        var children = project.activeLayer.children;   // @th** used for ?
+
         // - Setup for tool Motion
         var circle = new Path.Circle(100,100, 10); //{seem to have to start with loc here}
         circle.strokeColor = 'red';
 
         //view.center = circle.position;
-
 
         // // - some stuff ...
         // var aCircle = new Path.Circle({     //circle as tracing marker
@@ -72,106 +83,102 @@
         // aStar.strokeWidth = 2;
         // aStar.strokeColor = 'black';
 
-
-
 //--------------------------- App Actions
+//==========================================================================
 
-        var children = project.activeLayer.children;
-        function onMouseDown(event) {
+   var runLeap = false;
+  function useLeap () {
+    // Leap loop. Only be called if a controller is
+    // available, though
+      if (typeof Leap !== "undefined")
+    {
+        path = new Path({
+            segments: [circle.point],
+            strokeColor: 'black',
+            // Select the path, so we can see its segment points:
+            fullySelected: true
+        });
+
+        var fingerPos = new Point();
+
+//console.log('leap called> ' + runLeap);
+        Leap.loop(function(frame) {
+console.log('leap called> ' + runLeap);
+            var ids = {};
+            var hands = frame.hands;
+            var pointables = frame.pointables; //pointables returns values for each fingers tracked.
+            var posX, posY, posZ;
+            //var fingerPos = new Point();
+            //console.debug(' initial>' + pointable + ' num> ' + pointables[1])
+              for (var i = 0, pointable; pointable = pointables[i++];) {
+                    if (i===1) {                                            // **just index??
+                        posX = (pointable.tipPosition[0] * 0.5);
+                        posY = (pointable.tipPosition[2] * 0.5);
+                        posZ = (pointable.tipPosition[1] * 0.1) - 20;
+                    }      
+                    ids[pointable.id] = true;
+              }      
+              if (frame.hands.length > 0) {
+                  fingerPos.x = posX;
+                  fingerPos.y = posY;
+                  if (runLeap) {
+                    console.log('fingerPos> ' + fingerPos.x.toFixed(3) + ', ' + fingerPos.y.toFixed(3));
+                  }
+                      pos = fingerPos;
+                      m_rate = 5;
+//                       m_rate = event.delta.length;
+                      var to_x = fingerPos.x;
+                      var to_y = fingerPos.y;
+                      if (Math.abs(to_x - last_pos_x) > (m_rate) || Math.abs(to_y - last_pos_y) > (m_rate)) {
+                        last_pos_x = to_x;
+                        last_pos_y = to_y;
+
+                        path.add(pos)
+                        pt_ct++;
+            
+                      if (pt_ct > 2* m_rate) {
+                        pt_ct = 0;
+                        path.smooth({ type: 'continuous', from: seg_ct, to: (seg_ct + 7)});
+                        seg_ct += 8;
+                        
+                        var dist_now = (path.length - len_here);
+                        for (i = 0; i < 1; i += 0.1) {
+                          smooth_pt = path.getPointAt(len_here + (i * dist_now));
+    //console.log(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
+                          fabmo.livecodeStart(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
+                        }
+                        len_here = path.length;
+                      }
+                   }
+              }             
+        }) 
+    }
+  }
+
+
+    function mouseDown(event) {
+//    $('#riCanvas').mousedown(function(event) {                    // Initialize a motion path
             // If we produced a path before, deselect it:
+            ptStart.x = event.clientX;
+            ptStart.y = event.clientY;
+    console.log('x> ' + ptStart.x + ', ' + ptStart.y);
             if (path) {
                 path.selected = false;
             }
             // Create a new path and set its stroke color to black:
             path = new Path({
-                segments: [event.point],
+                segments: [ptStart],
                 strokeColor: 'black',
                 // Select the path, so we can see its segment points:
                 fullySelected: true
             });
+            ptLast = ptStart;
+            mouse_DN = true;
         //children = project.activeLayer.children;
-    console.log("num children - ", children.length, start_child, children.length - 1);
-        }
+    //console.log("num children - ", children.length, start_child, children.length - 1);
+    }
 
-
-    // If the Leap Motion library is available, set up our
-    // Leap loop. Will only be called if a controller is
-    // available, though
-    if (typeof Leap !== "undefined")
-    {
-      // Setup Leap loop with frame callback function
-      Leap.loop(function (frame) {
-        // We just want to get the first hand
-        if (frame.hands.length > 0) {
-            path = new Path({
-                segments: [event.point],
-                strokeColor: 'black',
-                // Select the path, so we can see its segment points:
-                fullySelected: true
-            });
-
-
-          var hand = frame.hands[0];
-
-          // Define the size of the ball based on the height of
-          // the hand
-//          ballSize = hand.sphereCenter[1] * 3;
-
-          // And we set the location of the ball - relative to
-          // the center of the view - based on the position of the
-          // hand in Leap space
-
-          fingerPos =
-            new Point(
-              hand.sphereCenter[0] * 4 + view.size.width / 2,
-              hand.sphereCenter[2] * 4 + view.size.height / 2
-            );
-var stabilized = hand.stabilizedPalmPosition;
-    console.debug('finger> ' + fingerPos + ',    stabilized> ' + stabilized);
-var delta = Leap.vec3.create();
-Leap.vec3.subtract(delta, stabilized, hand.palmPosition);
-console.debug("Difference between palm and stabilized palm positions: " + delta);
-
-
-                      pos = fingerPos;
-//                      m_rate = event.delta.length;
-                      m_rate = 20;
-                      var to_x = pos.x;
-                      var to_y = pos.y;
-                      if (Math.abs(to_x - last_pos_x) > (m_rate) || Math.abs(to_y - last_pos_y) > (m_rate)) {
-                        last_pos_x = to_x;
-                        last_pos_y = to_y;
-                        path.add(pos)
-                        pt_ct++;
-  
-                          if (pt_ct > 2* m_rate) {
-                            pt_ct = 0;
-                            path.smooth({ type: 'continuous', from: seg_ct, to: (seg_ct + 7)});
-                            seg_ct += 8;
-                            
-                            var dist_now = (path.length - len_here);
-                            for (i = 0; i < 1; i += 0.1) {
-                              smooth_pt = path.getPointAt(len_here + (i * dist_now));
-//                              console.log(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
-                              fabmo.livecodeStart(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
-                            }
-                            len_here = path.length;
-                          }
-                      }          
-//            textItem1.content = 'Segment count/length: ' + path.segments.length + ' / ' + path.length.toFixed(3);
-
-
-
-        }
-      })
-    } 
-
-
-
-
-
-        // Dragging mouse adds points to path
-        function onMouseDrag(event) {
+    function mouseMove(event) {
         
                           // // Get the nearest point from the mouse position to tracing target
                           // var nearestPoint = aStar.getNearestPoint(event.point);
@@ -179,14 +186,22 @@ console.debug("Difference between palm and stabilized palm positions: " + delta)
                           // aCircle.position = nearestPoint;
                           // // and make it tool position
                           // pos = aCircle.position;
+            if (!mouse_DN) {return}
+                                                            // ...figure out if down and dragging ...
+                         ptNew.x = event.clientX;
+                         ptNew.y = event.clientY;
+                         v1 = ptNew - ptLast;
+       console.log('new> ' + ptNew + '  old> ' + ptLast + '  dif> ' + v1.length);
 
-                      pos = event.point;
-                      m_rate = event.delta.length;
-                      var to_x = pos.x;
-                      var to_y = pos.y;
+                      pos = ptNew;
+                      m_rate = 5;
+//                       m_rate = event.delta.length;
+                      var to_x = ptNew.x;
+                      var to_y = ptNew.y;
                       if (Math.abs(to_x - last_pos_x) > (m_rate) || Math.abs(to_y - last_pos_y) > (m_rate)) {
                         last_pos_x = to_x;
                         last_pos_y = to_y;
+
                         path.add(pos)
                         pt_ct++;
   
@@ -205,27 +220,56 @@ console.debug("Difference between palm and stabilized palm positions: " + delta)
                           }
                       }          
             textItem1.content = 'Segment count/length: ' + path.segments.length + ' / ' + path.length.toFixed(3);
-        }
+    }
 
         // When the mouse is released, we simplify the path:
-        function onMouseUp(event) {
-//            path.smooth({ type: 'geometric', factor: 0.5, from: seg_ct, to: (seg_ct + pt_ct)});
+//    $('#riCanvas').mouseup(function(event) {
+//        riTool.onMouseUp = function(event) {
+        function mouseUp(event) {
+            path.smooth({ type: 'geometric', factor: 0.5, from: seg_ct, to: (seg_ct + pt_ct)});
+            mouse_DN = false;
             pt_ct = 0;
             seg_ct = 0;
             len_here = 0;
-            var segmentCount = path.segments.length;
-            //console.log(path);
-            // When the mouse is released, simplify it:
-//            path.simplify(10);
-//            path.smooth({ type: 'geometric', factor: .5 });
-//            path.flatten(.5);
+             var segmentCount = path.segments.length;
+             //console.log(path);
+             // When the mouse is released, simplify it:
+ //            path.simplify(10);
+ //            path.smooth({ type: 'geometric', factor: .5 });
+ //            path.flatten(.5);
 
-            // Select the path, so we can see its segments:
-            path.fullySelected = true;
-            var newSegmentCount = path.segments.length;
-            var difference = segmentCount - newSegmentCount;
-            var percentage = 100 - Math.round(newSegmentCount / segmentCount * 100);
-        }
+             // Select the path, so we can see its segments:
+             path.fullySelected = true;
+             var newSegmentCount = path.segments.length;
+             var difference = segmentCount - newSegmentCount;
+             var percentage = 100 - Math.round(newSegmentCount / segmentCount * 100);
+    }
+
+//$('#riCanvas').keydown(function(event) {
+        riTool.onKeyDown = function(event) {                // Get Keys for use with LEAP
+        //  $('#riCanvas').on('keydown', function(event) {
+    console.dir(event);
+            if (event.key == 's') {
+                if (!runLeap) {
+           console.log('Leap-ON > ');   
+                  runLeap = true;
+                  useLeap();
+                } else {
+           console.log('Leap-OFF > ');   
+                  runLeap = false;
+                }
+                useLeap();
+                return false;   
+            }
+        } 
+        // riTool.onKeyUp = function(event) {
+        //     if (event.key == 'space') {
+        //         runLeap = false;
+        //         // Prevent the key event from bubbling
+        //      console.log('END-space> ');
+        //         return false;
+        //     }
+        // }        
 //===========================ACTION FUNCTIONS
 //---------------------------drawing
     function onResize () {
@@ -265,7 +309,7 @@ console.debug("Difference between palm and stabilized palm positions: " + delta)
     }
 
     // - Deal with ZOOM by mousewheel
-    $('#riCanvas').on('mousewheel DOMMouseScroll MozMousePixelScroll', function(event){ 
+    $('#riCanvas').on('mousewheel DOMMouseScroll MozMousePixelScroll', function(event) { 
         var zoomScale = 0.1;                       // Smooth scaling a bit
         if (riScale > 1.2) zoomScale = 0.2;
         if (riScale < 0.8) zoomScale = 0.05;
@@ -301,10 +345,24 @@ console.debug("Difference between palm and stabilized palm positions: " + delta)
       }
     });
 
+
+    // document.addEventListener('mousedown', mouseDown);
+    // document.addEventListener('drag', mouseDrag);
+    // document.addEventListener('mouseup', mouseUp);
+
 //--------------------------ready!
     $(document).ready(function() {
         onResize();   
         fabmo.requestStatus(); // Make sure we have start location
+        riCanvas.addEventListener('mousedown', mouseDown);
+        riCanvas.addEventListener('mousemove', mouseMove);
+        riCanvas.addEventListener('mouseup', mouseUp);
 //        start_child = project.activeLayer.children.length;
     console.log("loaded:  ", paper.project, circle.position);
+
+        $(window).focusout(function(){
+          console.log("lost focus!")
+          fabmo.livecodeStop();   // hard code a termination ... probably not needed
+        });
+//        useLeap();
     });
