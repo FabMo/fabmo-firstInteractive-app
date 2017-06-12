@@ -34,6 +34,9 @@
     var ptNew = new Point(0,0);
     var mouse_DN = false;
     var v1 = new Point(0,0);
+ 
+    var runLeap = false;
+    var fingerPos = new Point(150,150);
 
         // - Set Starting View of Tool Work Area
         var bbox = new Path.Rectangle([0, 0, tool_width, tool_height]); // sets scale
@@ -66,6 +69,8 @@
         // - Setup for tool Motion
         var circle = new Path.Circle(100,100, 10); //{seem to have to start with loc here}
         circle.strokeColor = 'red';
+        var leap_circle = new Path.Circle(150,150, 5); //{seem to have to start with loc here}
+        leap_circle.strokeColor = 'green';
 
         //view.center = circle.position;
 
@@ -86,34 +91,25 @@
 //--------------------------- App Actions
 //==========================================================================
 
-   var runLeap = false;
   function useLeap () {
-    // Leap loop. Only be called if a controller is
-    // available, though
-      if (typeof Leap !== "undefined")
-    {
-        path = new Path({
-            segments: [circle.point],
-            strokeColor: 'black',
-            // Select the path, so we can see its segment points:
-            fullySelected: true
-        });
+    // Leap loop. Only be called if a controller is available ...
+    if (typeof Leap !== "undefined") {
+        // path = new Path({
+        //     segments: [circle.point],
+        //     strokeColor: 'black',
+        //     // Select the path, so we can see its segment points:
+        //     fullySelected: true
+        // });
 
-        var fingerPos = new Point();
-
-//console.log('leap called> ' + runLeap);
         Leap.loop(function(frame) {
-console.log('leap called> ' + runLeap);
             var ids = {};
             var hands = frame.hands;
             var pointables = frame.pointables; //pointables returns values for each fingers tracked.
             var posX, posY, posZ;
-            //var fingerPos = new Point();
-            //console.debug(' initial>' + pointable + ' num> ' + pointables[1])
-              for (var i = 0, pointable; pointable = pointables[i++];) {
-                    if (i===1) {                                            // **just index??
-                        posX = (pointable.tipPosition[0] * 0.5);
-                        posY = (pointable.tipPosition[2] * 0.5);
+              for (var i = 0, pointable; pointable = pointables[i++];) {    // We're looping through hand ...
+                    if (i===1) {                                            // **just index finger??
+                        posX = (pointable.tipPosition[0] * 2) + 150;
+                        posY = (pointable.tipPosition[2] * 2) + 150;
                         posZ = (pointable.tipPosition[1] * 0.1) - 20;
                     }      
                     ids[pointable.id] = true;
@@ -121,9 +117,11 @@ console.log('leap called> ' + runLeap);
               if (frame.hands.length > 0) {
                   fingerPos.x = posX;
                   fingerPos.y = posY;
+                 console.log('fingerPos> ' + fingerPos.x.toFixed(3) + ', ' + fingerPos.y.toFixed(3));
+                  leap_circle.position = (fingerPos);
+
                   if (runLeap) {
-                    console.log('fingerPos> ' + fingerPos.x.toFixed(3) + ', ' + fingerPos.y.toFixed(3));
-                  }
+                  
                       pos = fingerPos;
                       m_rate = 5;
 //                       m_rate = event.delta.length;
@@ -150,6 +148,9 @@ console.log('leap called> ' + runLeap);
                         len_here = path.length;
                       }
                    }
+                } else {
+                    // just display a little circle
+                }
               }             
         }) 
     }
@@ -159,9 +160,11 @@ console.log('leap called> ' + runLeap);
     function mouseDown(event) {
 //    $('#riCanvas').mousedown(function(event) {                    // Initialize a motion path
             // If we produced a path before, deselect it:
+     //     if (!mouse_DN) {return}
+            
             ptStart.x = event.clientX;
             ptStart.y = event.clientY;
-    console.log('x> ' + ptStart.x + ', ' + ptStart.y);
+    console.log('startDown> ' + ptStart.x + ', ' + ptStart.y);
             if (path) {
                 path.selected = false;
             }
@@ -190,26 +193,27 @@ console.log('leap called> ' + runLeap);
                                                             // ...figure out if down and dragging ...
                          ptNew.x = event.clientX;
                          ptNew.y = event.clientY;
-                         v1 = ptNew - ptLast;
-       console.log('new> ' + ptNew + '  old> ' + ptLast + '  dif> ' + v1.length);
 
                       pos = ptNew;
-                      m_rate = 5;
-//                       m_rate = event.delta.length;
+                      m_rate = 1.5;
                       var to_x = ptNew.x;
                       var to_y = ptNew.y;
-                      if (Math.abs(to_x - last_pos_x) > (m_rate) || Math.abs(to_y - last_pos_y) > (m_rate)) {
-                        last_pos_x = to_x;
-                        last_pos_y = to_y;
-
+                      v1 = ptNew - ptLast;
+                      if (v1.length > 25) {                 // Apply LENGTH criterion
+                        ptLast.x = ptNew.x;  // ... learned can't copy because by ref
+                        ptLast.y = ptNew.y;
+                  
                         path.add(pos)
                         pt_ct++;
+       console.log('new> ' + ptNew + '  old> ' + ptLast + '  dif> ' + v1.length);
   
-                          if (pt_ct > 2* m_rate) {
+                          if (pt_ct > 2 * m_rate) {
                             pt_ct = 0;
                             path.smooth({ type: 'continuous', from: seg_ct, to: (seg_ct + 7)});
+                           console.log('smooth> ' + seg_ct);
                             seg_ct += 8;
-                            
+
+          
                             var dist_now = (path.length - len_here);
                             for (i = 0; i < 1; i += 0.1) {
                               smooth_pt = path.getPointAt(len_here + (i * dist_now));
@@ -218,7 +222,8 @@ console.log('leap called> ' + runLeap);
                             }
                             len_here = path.length;
                           }
-                      }          
+                        }
+
             textItem1.content = 'Segment count/length: ' + path.segments.length + ' / ' + path.length.toFixed(3);
     }
 
@@ -253,10 +258,35 @@ console.log('leap called> ' + runLeap);
                 if (!runLeap) {
            console.log('Leap-ON > ');   
                   runLeap = true;
+
+            if (path) {
+                path.selected = false;
+            }
+            // Create a new path and set its stroke color to black:
+            path = new Path({
+                segments: [leap_circle.position],
+                strokeColor: 'black',
+                // Select the path, so we can see its segment points:
+                fullySelected: true
+            });
+
+
                   useLeap();
                 } else {
            console.log('Leap-OFF > ');   
                   runLeap = false;
+
+                          path.smooth({ type: 'geometric', factor: 0.5, from: seg_ct, to: (seg_ct + pt_ct)});
+                          pt_ct = 0;
+                          seg_ct = 0;
+                          len_here = 0;
+                           var segmentCount = path.segments.length;
+                           // Select the path, so we can see its segments:
+                           path.fullySelected = true;
+                           var newSegmentCount = path.segments.length;
+                           var difference = segmentCount - newSegmentCount;
+                           var percentage = 100 - Math.round(newSegmentCount / segmentCount * 100);
+
                 }
                 useLeap();
                 return false;   
@@ -364,5 +394,5 @@ console.log('leap called> ' + runLeap);
           console.log("lost focus!")
           fabmo.livecodeStop();   // hard code a termination ... probably not needed
         });
-//        useLeap();
+        //useLeap();
     });
