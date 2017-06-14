@@ -91,16 +91,9 @@
 //--------------------------- App Actions
 //==========================================================================
 
-  function useLeap () {
-    // Leap loop. Only be called if a controller is available ...
+  function useLeap () {    // Leap loop. Only be called if a controller is available ...
     if (typeof Leap !== "undefined") {
-        // path = new Path({
-        //     segments: [circle.point],
-        //     strokeColor: 'black',
-        //     // Select the path, so we can see its segment points:
-        //     fullySelected: true
-        // });
-
+        var leapPathStarted = false;
         Leap.loop(function(frame) {
             var ids = {};
             var hands = frame.hands;
@@ -117,53 +110,52 @@
               if (frame.hands.length > 0) {
                   fingerPos.x = posX;
                   fingerPos.y = posY;
+                  if (!leapPathStarted) {
+                    leapPathStarted = true;
+                    iniMotion();
+                  }
+
                  console.log('fingerPos> ' + fingerPos.x.toFixed(3) + ', ' + fingerPos.y.toFixed(3));
                   leap_circle.position = (fingerPos);
-
                   if (runLeap) {
-                  
-                      pos = fingerPos;
-                      m_rate = 5;
-//                       m_rate = event.delta.length;
-                      var to_x = fingerPos.x;
-                      var to_y = fingerPos.y;
-                      if (Math.abs(to_x - last_pos_x) > (m_rate) || Math.abs(to_y - last_pos_y) > (m_rate)) {
-                        last_pos_x = to_x;
-                        last_pos_y = to_y;
-
-                        path.add(pos)
-                        pt_ct++;
-            
-                      if (pt_ct > 2* m_rate) {
-                        pt_ct = 0;
-                        path.smooth({ type: 'continuous', from: seg_ct, to: (seg_ct + 7)});
-                        seg_ct += 8;
-                        
-                        var dist_now = (path.length - len_here);
-                        for (i = 0; i < 1; i += 0.1) {
-                          smooth_pt = path.getPointAt(len_here + (i * dist_now));
-    //console.log(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
-                          fabmo.livecodeStart(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
-                        }
-                        len_here = path.length;
-                      }
-                   }
-                } else {
+                    ptNew = fingerPos;
+                    makeMotion();
+                  }
+              } else {
                     // just display a little circle
-                }
-              }             
+              }
         }) 
     }
   }
 
+    riTool.onKeyDown = function(event) {                // Get Keys for use with LEAP
+        if (event.key == 's') {
+            if (!runLeap) {
+           console.log('Leap-ON > ');   
+              runLeap = true;
+              useLeap();
+            } else {
+           console.log('Leap-OFF > ');   
+              runLeap = false;
+              stopMotion();
+            }
+            return false;   
+        }
+    } 
+
 // Handle Mouse Motion
     function mouseDown(event) {
       iniMotion();
+      mouse_DN = true;
     }
     function mouseMove(event) {
+      if (!mouse_DN) {return}                     // Figure out if down and dragging ...
+      ptNew.x = event.clientX;
+      ptNew.y = event.clientY;
       makeMotion();  
     }
     function mouseUp(event) {
+      mouse_DN = false;
       stopMotion();
     }
 
@@ -182,7 +174,6 @@ function iniMotion () {
                 fullySelected: true // ... select so we can see segment points
             });
             ptLast = ptStart;
-            mouse_DN = true;
 }
 function makeMotion () {
                           // // Get the nearest point from the mouse position to tracing target
@@ -190,11 +181,7 @@ function makeMotion () {
                           // // Move the red circle to the nearest point:
                           // aCircle.position = nearestPoint;
                           // // and make it tool position
-                          // pos = aCircle.position;
-            if (!mouse_DN) {return}                     // Figure out if down and dragging ...
-                  ptNew.x = event.clientX;
-                  ptNew.y = event.clientY;
-                  pos = ptNew;
+                          // ptNew = aCircle.position;
                   m_rate = 4;
                   var to_x = ptNew.x;
                   var to_y = ptNew.y;
@@ -202,7 +189,7 @@ function makeMotion () {
                   if (v1.length > 25) {                 // Apply LENGTH criterion
                     ptLast.x = ptNew.x;  // ... learned can't copy because by ref
                     ptLast.y = ptNew.y;
-                      path.add(pos)
+                      path.add(ptNew)
                       pt_ct++;
                    // console.log('new> ' + ptNew + '  old> ' + ptLast + '  dif> ' + v1.length);
                       if (pt_ct >= m_rate) {
@@ -223,7 +210,6 @@ function makeMotion () {
             textItem1.content = 'Segment count/length: ' + path.segments.length + ' / ' + path.length.toFixed(3);
 }
 function stopMotion () {
-            mouse_DN = false;
             path.smooth({ type: 'geometric', factor: 0.5, from: seg_ct, to: (seg_ct + pt_ct)});
                             var dist_now = (path.length - len_here);
                             for (i = 0; i < 1; i += 0.1) {
@@ -250,56 +236,14 @@ function stopMotion () {
 }
 
 
-//$('#riCanvas').keydown(function(event) {
-        riTool.onKeyDown = function(event) {                // Get Keys for use with LEAP
-        //  $('#riCanvas').on('keydown', function(event) {
-    console.dir(event);
-            if (event.key == 's') {
-                if (!runLeap) {
-           console.log('Leap-ON > ');   
-                  runLeap = true;
-
-            if (path) {
-                path.selected = false;
-            }
-            // Create a new path and set its stroke color to black:
-            path = new Path({
-                segments: [leap_circle.position],
-                strokeColor: 'black',
-                // Select the path, so we can see its segment points:
-                fullySelected: true
-            });
-
-
-                  useLeap();
-                } else {
-           console.log('Leap-OFF > ');   
-                  runLeap = false;
-
-                          path.smooth({ type: 'geometric', factor: 0.5, from: seg_ct, to: (seg_ct + pt_ct)});
-                          pt_ct = 0;
-                          seg_ct = 0;
-                          len_here = 0;
-                           var segmentCount = path.segments.length;
-                           // Select the path, so we can see its segments:
-                           path.fullySelected = true;
-                           var newSegmentCount = path.segments.length;
-                           var difference = segmentCount - newSegmentCount;
-                           var percentage = 100 - Math.round(newSegmentCount / segmentCount * 100);
-
-                }
-                useLeap();
-                return false;   
-            }
-        } 
-        // riTool.onKeyUp = function(event) {
-        //     if (event.key == 'space') {
-        //         runLeap = false;
-        //         // Prevent the key event from bubbling
-        //      console.log('END-space> ');
-        //         return false;
-        //     }
-        // }        
+  // riTool.onKeyUp = function(event) {
+  //     if (event.key == 'space') {
+  //         runLeap = false;
+  //         // Prevent the key event from bubbling
+  //      console.log('END-space> ');
+  //         return false;
+  //     }
+  // }        
 //===========================ACTION FUNCTIONS
 //---------------------------drawing
     function onResize () {
