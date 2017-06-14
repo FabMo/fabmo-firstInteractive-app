@@ -162,6 +162,7 @@
             // If we produced a path before, deselect it:
      //     if (!mouse_DN) {return}
             
+            seg_ct = 0;
             ptStart.x = event.clientX;
             ptStart.y = event.clientY;
     console.log('startDown> ' + ptStart.x + ', ' + ptStart.y);
@@ -195,7 +196,7 @@
                          ptNew.y = event.clientY;
 
                       pos = ptNew;
-                      m_rate = 1.5;
+                      m_rate = 4;
                       var to_x = ptNew.x;
                       var to_y = ptNew.y;
                       v1 = ptNew - ptLast;
@@ -205,15 +206,15 @@
                   
                         path.add(pos)
                         pt_ct++;
-       console.log('new> ' + ptNew + '  old> ' + ptLast + '  dif> ' + v1.length);
+      // console.log('new> ' + ptNew + '  old> ' + ptLast + '  dif> ' + v1.length);
   
-                          if (pt_ct > 2 * m_rate) {
+                          if (pt_ct >= m_rate) {
+                           console.log('smooth_segCt> ' + seg_ct + ' pts> ' + pt_ct);
                             pt_ct = 0;
-                            path.smooth({ type: 'continuous', from: seg_ct, to: (seg_ct + 7)});
-                           console.log('smooth> ' + seg_ct);
-                            seg_ct += 8;
-
+                            path.smooth({ type: 'continuous', from: seg_ct, to: (seg_ct + m_rate - 1)});
+                            seg_ct += m_rate;
           
+                            // get smoothed moves ... 10 along path??
                             var dist_now = (path.length - len_here);
                             for (i = 0; i < 1; i += 0.1) {
                               smooth_pt = path.getPointAt(len_here + (i * dist_now));
@@ -231,8 +232,16 @@
 //    $('#riCanvas').mouseup(function(event) {
 //        riTool.onMouseUp = function(event) {
         function mouseUp(event) {
-            path.smooth({ type: 'geometric', factor: 0.5, from: seg_ct, to: (seg_ct + pt_ct)});
             mouse_DN = false;
+            path.smooth({ type: 'geometric', factor: 0.5, from: seg_ct, to: (seg_ct + pt_ct)});
+                              var dist_now = (path.length - len_here);
+                            for (i = 0; i < 1; i += 0.1) {
+                              smooth_pt = path.getPointAt(len_here + (i * dist_now));
+//                              console.log(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
+                              fabmo.livecodeStart(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
+                            }
+                            len_here = path.length;
+         textItem1.content = 'Segment count/length: ' + path.segments.length + ' / ' + path.length.toFixed(3);
             pt_ct = 0;
             seg_ct = 0;
             len_here = 0;
