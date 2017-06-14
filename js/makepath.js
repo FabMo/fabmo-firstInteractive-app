@@ -156,108 +156,99 @@
     }
   }
 
-
+// Handle Mouse Motion
     function mouseDown(event) {
-//    $('#riCanvas').mousedown(function(event) {                    // Initialize a motion path
-            // If we produced a path before, deselect it:
-     //     if (!mouse_DN) {return}
-            
-            seg_ct = 0;
+      iniMotion();
+    }
+    function mouseMove(event) {
+      makeMotion();  
+    }
+    function mouseUp(event) {
+      stopMotion();
+    }
+
+// GENERIC MOTION PLANNING on fly ...
+function iniMotion () {
+            seg_ct = 0;                                // If a path exits, deselect it
             ptStart.x = event.clientX;
             ptStart.y = event.clientY;
     console.log('startDown> ' + ptStart.x + ', ' + ptStart.y);
             if (path) {
                 path.selected = false;
             }
-            // Create a new path and set its stroke color to black:
             path = new Path({
                 segments: [ptStart],
                 strokeColor: 'black',
-                // Select the path, so we can see its segment points:
-                fullySelected: true
+                fullySelected: true // ... select so we can see segment points
             });
             ptLast = ptStart;
             mouse_DN = true;
-        //children = project.activeLayer.children;
-    //console.log("num children - ", children.length, start_child, children.length - 1);
-    }
-
-    function mouseMove(event) {
-        
+}
+function makeMotion () {
                           // // Get the nearest point from the mouse position to tracing target
                           // var nearestPoint = aStar.getNearestPoint(event.point);
                           // // Move the red circle to the nearest point:
                           // aCircle.position = nearestPoint;
                           // // and make it tool position
                           // pos = aCircle.position;
-            if (!mouse_DN) {return}
-                                                            // ...figure out if down and dragging ...
-                         ptNew.x = event.clientX;
-                         ptNew.y = event.clientY;
-
-                      pos = ptNew;
-                      m_rate = 4;
-                      var to_x = ptNew.x;
-                      var to_y = ptNew.y;
-                      v1 = ptNew - ptLast;
-                      if (v1.length > 25) {                 // Apply LENGTH criterion
-                        ptLast.x = ptNew.x;  // ... learned can't copy because by ref
-                        ptLast.y = ptNew.y;
-                  
-                        path.add(pos)
-                        pt_ct++;
-      // console.log('new> ' + ptNew + '  old> ' + ptLast + '  dif> ' + v1.length);
-  
-                          if (pt_ct >= m_rate) {
-                           console.log('smooth_segCt> ' + seg_ct + ' pts> ' + pt_ct);
-                            pt_ct = 0;
-                            path.smooth({ type: 'continuous', from: seg_ct, to: (seg_ct + m_rate - 1)});
-                            seg_ct += m_rate;
-          
-                            // get smoothed moves ... 10 along path??
+            if (!mouse_DN) {return}                     // Figure out if down and dragging ...
+                  ptNew.x = event.clientX;
+                  ptNew.y = event.clientY;
+                  pos = ptNew;
+                  m_rate = 4;
+                  var to_x = ptNew.x;
+                  var to_y = ptNew.y;
+                  v1 = ptNew - ptLast;
+                  if (v1.length > 25) {                 // Apply LENGTH criterion
+                    ptLast.x = ptNew.x;  // ... learned can't copy because by ref
+                    ptLast.y = ptNew.y;
+                      path.add(pos)
+                      pt_ct++;
+                   // console.log('new> ' + ptNew + '  old> ' + ptLast + '  dif> ' + v1.length);
+                      if (pt_ct >= m_rate) {
+                       console.log('smooth_segCt> ' + seg_ct + ' pts> ' + pt_ct);
+                        pt_ct = 0;
+                        path.smooth({ type: 'continuous', from: seg_ct, to: (seg_ct + m_rate - 1)});
+                        seg_ct += m_rate;
+                          // get smoothed moves ... 10 along path??
+                          var dist_now = (path.length - len_here);
+                          for (i = 0; i < 1; i += 0.1) {
+                            smooth_pt = path.getPointAt(len_here + (i * dist_now));
+                       // console.log(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
+                            fabmo.livecodeStart(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
+                          }
+                          len_here = path.length;
+                      }
+                  }
+            textItem1.content = 'Segment count/length: ' + path.segments.length + ' / ' + path.length.toFixed(3);
+}
+function stopMotion () {
+            mouse_DN = false;
+            path.smooth({ type: 'geometric', factor: 0.5, from: seg_ct, to: (seg_ct + pt_ct)});
                             var dist_now = (path.length - len_here);
                             for (i = 0; i < 1; i += 0.1) {
                               smooth_pt = path.getPointAt(len_here + (i * dist_now));
-//                              console.log(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
+//                    console.log(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
                               fabmo.livecodeStart(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
                             }
                             len_here = path.length;
-                          }
-                        }
-
             textItem1.content = 'Segment count/length: ' + path.segments.length + ' / ' + path.length.toFixed(3);
-    }
-
-        // When the mouse is released, we simplify the path:
-//    $('#riCanvas').mouseup(function(event) {
-//        riTool.onMouseUp = function(event) {
-        function mouseUp(event) {
-            mouse_DN = false;
-            path.smooth({ type: 'geometric', factor: 0.5, from: seg_ct, to: (seg_ct + pt_ct)});
-                              var dist_now = (path.length - len_here);
-                            for (i = 0; i < 1; i += 0.1) {
-                              smooth_pt = path.getPointAt(len_here + (i * dist_now));
-//                              console.log(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
-                              fabmo.livecodeStart(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
-                            }
-                            len_here = path.length;
-         textItem1.content = 'Segment count/length: ' + path.segments.length + ' / ' + path.length.toFixed(3);
             pt_ct = 0;
             seg_ct = 0;
             len_here = 0;
-             var segmentCount = path.segments.length;
+            var segmentCount = path.segments.length;
              //console.log(path);
              // When the mouse is released, simplify it:
  //            path.simplify(10);
  //            path.smooth({ type: 'geometric', factor: .5 });
  //            path.flatten(.5);
-
              // Select the path, so we can see its segments:
              path.fullySelected = true;
              var newSegmentCount = path.segments.length;
              var difference = segmentCount - newSegmentCount;
              var percentage = 100 - Math.round(newSegmentCount / segmentCount * 100);
-    }
+}
+
 
 //$('#riCanvas').keydown(function(event) {
         riTool.onKeyDown = function(event) {                // Get Keys for use with LEAP
