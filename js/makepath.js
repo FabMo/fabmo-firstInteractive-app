@@ -149,7 +149,7 @@
       mouse_DN = true;
     }
     function mouseMove(event) {
-      if (!mouse_DN) {return}                     // Figure out if down and dragging ...
+      if (!mouse_DN) {return}                           // Figure out if down and dragging ...
       ptNew.x = event.clientX;
       ptNew.y = event.clientY;
       makeMotion();  
@@ -176,25 +176,19 @@ function iniMotion () {
             ptLast = ptStart;
 }
 function makeMotion () {
-                          // // Get the nearest point from the mouse position to tracing target
-                          // var nearestPoint = aStar.getNearestPoint(event.point);
-                          // // Move the red circle to the nearest point:
-                          // aCircle.position = nearestPoint;
-                          // // and make it tool position
-                          // ptNew = aCircle.position;
-                  m_rate = 4;
-            var x,y,z;
+                  m_rate = 4;                          // ... some sort of speed scale?
+                  var x,y,z;                           // temp var for sturmer manual system
                   var to_x = ptNew.x;
                   var to_y = ptNew.y;
                   v1 = ptNew - ptLast;
-                  if (v1.length > 25) {                 // Apply LENGTH criterion
-                    ptLast.x = ptNew.x;  // ... learned can't copy because by ref
+                  if (v1.length > 25) {                // Apply LENGTH criterion ... is this when motion starts?
+                    ptLast.x = ptNew.x;                // ... learned can't copy because by ref
                     ptLast.y = ptNew.y;
                       path.add(ptNew)
                       pt_ct++;
-                   // console.log('new> ' + ptNew + '  old> ' + ptLast + '  dif> ' + v1.length);
+                      // console.log('new> ' + ptNew + '  old> ' + ptLast + '  dif> ' + v1.length);
                       if (pt_ct >= m_rate) {
-                       console.log('smooth_segCt> ' + seg_ct + ' pts> ' + pt_ct);
+                        console.log('smooth_segCt> ' + seg_ct + ' pts> ' + pt_ct);
                         pt_ct = 0;
                         path.smooth({ type: 'continuous', from: seg_ct, to: (seg_ct + m_rate - 1)});
                         seg_ct += m_rate;
@@ -202,8 +196,7 @@ function makeMotion () {
                           var dist_now = (path.length - len_here);
                           for (i = 0; i < 1; i += 0.1) {
                             smooth_pt = path.getPointAt(len_here + (i * dist_now));
-                       // console.log(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
-                            //fabmo.livecodeStart(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
+
                             	x = ((smooth_pt.x - bbox.bounds.left) / riUnit);
                             	y = ((bbox.bounds.bottom - smooth_pt.y) / riUnit);
 						      var code = ['G1']
@@ -215,8 +208,6 @@ function makeMotion () {
 						      //code.push('F60');
 						      fabmo.manualRunGCode(code.join(''))
 
-
-
                           }
                           len_here = path.length;
                       }
@@ -225,15 +216,11 @@ function makeMotion () {
 }
 function stopMotion () {
 
-            var x,y,z;
-
+            var x,y,z;             // ... temp var for Sturmer manual mode
             path.smooth({ type: 'geometric', factor: 0.5, from: seg_ct, to: (seg_ct + pt_ct)});
                             var dist_now = (path.length - len_here);
                             for (i = 0; i < 1; i += 0.1) {
                               smooth_pt = path.getPointAt(len_here + (i * dist_now));
-                              //console.log(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
-                              //fabmo.livecodeStart(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
-
 
                             	x = ((smooth_pt.x - bbox.bounds.left) / riUnit);
                             	y = ((bbox.bounds.bottom - smooth_pt.y) / riUnit);
@@ -242,6 +229,7 @@ function stopMotion () {
 						      if(y != undefined) {code.push('Y' + y.toFixed(4));}
 						      if(z != undefined) {code.push('Z' + z.toFixed(4));}
 						      code.push('F180');
+						      console.log("stopMotion?");
 						      console.log(code);
 						      //code.push('F60');
 						      fabmo.manualRunGCode(code.join(''))
@@ -349,7 +337,6 @@ function stopMotion () {
       }
     });
 
-
     // document.addEventListener('mousedown', mouseDown);
     // document.addEventListener('drag', mouseDrag);
     // document.addEventListener('mouseup', mouseUp);
@@ -369,9 +356,8 @@ function stopMotion () {
         $(window).focusout(function(){
           console.log("lost focus!")
 
-          fabmo.manualExit(); // hard-code termination
+          fabmo.manualExit(); // hard-code termination ... needed?
 
-          //fabmo.livecodeStop();   // hard code a termination ... probably not needed
         });
         //useLeap();
     });

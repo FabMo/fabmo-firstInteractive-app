@@ -45,3 +45,8 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+
+# ted build stuff
+# build
+node_modules
+dev_tools.bat
