@@ -183,6 +183,7 @@ function makeMotion () {
                           // // and make it tool position
                           // ptNew = aCircle.position;
                   m_rate = 4;
+            var x,y,z;
                   var to_x = ptNew.x;
                   var to_y = ptNew.y;
                   v1 = ptNew - ptLast;
@@ -202,7 +203,20 @@ function makeMotion () {
                           for (i = 0; i < 1; i += 0.1) {
                             smooth_pt = path.getPointAt(len_here + (i * dist_now));
                        // console.log(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
-                            fabmo.livecodeStart(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
+                            //fabmo.livecodeStart(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
+                            	x = ((smooth_pt.x - bbox.bounds.left) / riUnit);
+                            	y = ((bbox.bounds.bottom - smooth_pt.y) / riUnit);
+						      var code = ['G1']
+						      if(x != undefined) {code.push('X' + x.toFixed(4));}
+						      if(y != undefined) {code.push('Y' + y.toFixed(4));}
+						      if(z != undefined) {code.push('Z' + z.toFixed(4));}
+						      code.push('F180');
+						      console.log(code);
+						      //code.push('F60');
+						      fabmo.manualRunGCode(code.join(''))
+
+
+
                           }
                           len_here = path.length;
                       }
@@ -210,12 +224,28 @@ function makeMotion () {
             textItem1.content = 'Segment count/length: ' + path.segments.length + ' / ' + path.length.toFixed(3);
 }
 function stopMotion () {
+
+            var x,y,z;
+
             path.smooth({ type: 'geometric', factor: 0.5, from: seg_ct, to: (seg_ct + pt_ct)});
                             var dist_now = (path.length - len_here);
                             for (i = 0; i < 1; i += 0.1) {
                               smooth_pt = path.getPointAt(len_here + (i * dist_now));
-//                    console.log(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
-                              fabmo.livecodeStart(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
+                              //console.log(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
+                              //fabmo.livecodeStart(((smooth_pt.x - bbox.bounds.left) / riUnit), ((bbox.bounds.bottom - smooth_pt.y) / riUnit),(err));
+
+
+                            	x = ((smooth_pt.x - bbox.bounds.left) / riUnit);
+                            	y = ((bbox.bounds.bottom - smooth_pt.y) / riUnit);
+						      var code = ['G1']
+						      if(x != undefined) {code.push('X' + x.toFixed(4));}
+						      if(y != undefined) {code.push('Y' + y.toFixed(4));}
+						      if(z != undefined) {code.push('Z' + z.toFixed(4));}
+						      code.push('F180');
+						      console.log(code);
+						      //code.push('F60');
+						      fabmo.manualRunGCode(code.join(''))
+
                             }
                             len_here = path.length;
             textItem1.content = 'Segment count/length: ' + path.segments.length + ' / ' + path.length.toFixed(3);
@@ -331,12 +361,17 @@ function stopMotion () {
         riCanvas.addEventListener('mousedown', mouseDown);
         riCanvas.addEventListener('mousemove', mouseMove);
         riCanvas.addEventListener('mouseup', mouseUp);
+
+        fabmo.manualEnter({hideKeypad:true, mode:'raw'});
+
 //        start_child = project.activeLayer.children.length;
     console.log("loaded:  ", paper.project, circle.position);
-
         $(window).focusout(function(){
           console.log("lost focus!")
-          fabmo.livecodeStop();   // hard code a termination ... probably not needed
+
+          fabmo.manualExit(); // hard-code termination
+
+          //fabmo.livecodeStop();   // hard code a termination ... probably not needed
         });
         //useLeap();
     });
