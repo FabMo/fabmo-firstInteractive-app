@@ -4,6 +4,7 @@ body {
     padding: 0;
     overflow: hidden;
     height: 100%;
+    touch-action: none;
 }
 
 /* Scale canvas with resize attribute to full size */

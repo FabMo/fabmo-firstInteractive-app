@@ -1,12 +1,13 @@
   // global position and tracking (to get in and out of paperScope)
   window.globals = {
     tool_x: 0,
-    tool_y: 0 
+    tool_y: 0,
+    tool_z: 0 
     //someFunction: function() { alert(globals.someValue); }
   }
 
   riTool = new Tool();                       // @th needed this to access keys, related to paperjs??
-                                             // ... not understanding general issues in getting EVENTS
+                                             
 
     var fabmo = new FabMoDashboard();        // seem to need a fabmo inside paperScope
     var path;
@@ -22,12 +23,18 @@
     var len_here = 0;
     var smooth_pt = new Point();
 
-    var tool_width = 6;                      // hard code size for handibot at moment
+    var tool_width = 12;                    // hard code size for moment
     var tool_height = 8;
     var tool_prop = tool_height / tool_width;
 
-    var riScale = 0.95;                      // view scale for zoom
-    var riUnit = 45;                         // unit value pixels per
+    var riScale = 0.95;                     // view scale for zoom
+    var riUnit = 45;                        // unit value pixels per
+    var target_z = .1;                      // fpr DN/UP work
+    var last_z = .1;
+    var spindle_ON = false;
+    var cur_press = .0;
+    var cur_width = .0;
+
 
     var ptStart = new Point(0,0);
     var ptLast = new Point(0,0);
@@ -35,9 +42,6 @@
     var mouse_DN = false;
     var v1 = new Point(0,0);
  
-    var runLeap = false;
-    var fingerPos = new Point(150,150);
-
         // - Set Starting View of Tool Work Area
         var bbox = new Path.Rectangle([0, 0, tool_width, tool_height]); // sets scale
           var bwidth, bheight;
@@ -55,7 +59,7 @@
         });
         var textItem2 = new PointText({
             content: 'Tool Location: ',
-            point: new Point((250), (30)),
+            point: new Point((20), (45)),
             fillColor: 'black'
         });
         var textItem3 = new PointText({
@@ -64,12 +68,12 @@
             fillColor: 'black'
         });
 
-        var children = project.activeLayer.children;   // @th** used for ?
+        var children = project.activeLayer.children;    // @th** used for ??
 
         // - Setup for tool Motion
-        var circle = new Path.Circle(100,100, 10); //{seem to have to start with loc here}
+        var circle = new Path.Circle(100,100, 10);      // starting at this location ??
         circle.strokeColor = 'red';
-        var leap_circle = new Path.Circle(150,150, 5); //{seem to have to start with loc here}
+        var leap_circle = new Path.Circle(150,150, 5);  // starting at this location for LEAP ??
         leap_circle.strokeColor = 'green';
 
         //view.center = circle.position;
@@ -88,8 +92,14 @@
         // aStar.strokeWidth = 2;
         // aStar.strokeColor = 'black';
 
+
+
 //--------------------------- App Actions
 //==========================================================================
+
+  // Setting up LEAP      
+  var runLeap = false;                     // ?? leap status of type??
+  var fingerPos = new Point(150,150);
 
   function useLeap () {    // Leap loop. Only be called if a controller is available ...
     if (typeof Leap !== "undefined") {
@@ -128,22 +138,45 @@
     }
   }
 
-    riTool.onKeyDown = function(event) {                // Get Keys for use with LEAP
+    riTool.onKeyDown = function(event) {                // Get Keys
+ console.log('gotevent', event.key);
         if (event.key == 's') {
             if (!runLeap) {
-           console.log('Leap-ON > ');   
-              runLeap = true;
-              useLeap();
+                console.log('Leap-ON > ');   
+                runLeap = true;
+                useLeap();
             } else {
-           console.log('Leap-OFF > ');   
-              runLeap = false;
-              stopMotion();
+                console.log('Leap-OFF > ');   
+                runLeap = false;
+                stopMotion();
             }
             return false;   
         }
+        if (event.key == 'z') {
+            target_z = target_z - .05;
+            console.log('Z-Down > ', target_z.toFixed(3));   
+        }
+        if (event.key == 'x') {
+            target_z = target_z + .05;
+            console.log('Z-Up > ', target_z.toFixed(3));   
+        }
+        if (event.key == 'o') {
+            if (!spindle_ON) {
+                spindle_ON = true;
+                fabmo.manualRunGCode("m3");
+            } else {
+                spindle_ON = false;
+                fabmo.manualRunGCode("m5")
+            }
+        }
+
+
+
+
+
     } 
 
-// Handle Mouse Motion
+// Handle Motion                                        // #################### MOTION
     function mouseDown(event) {
       iniMotion();
       mouse_DN = true;
@@ -152,6 +185,10 @@
       if (!mouse_DN) {return}                           // Figure out if down and dragging ...
       ptNew.x = event.clientX;
       ptNew.y = event.clientY;
+      cur_press = -1 * (event.pressure/2);
+      cur_width = event.width
+//      console.log("pres-", event.pressure)
+//      .ondragstart = () => false;  // ** prevent built in drag-drop
       makeMotion();  
     }
     function mouseUp(event) {
@@ -159,8 +196,10 @@
       stopMotion();
     }
 
+
 // GENERIC MOTION PLANNING on fly ...
-function iniMotion () {
+
+    function iniMotion () {
             seg_ct = 0;                                // If a path exits, deselect it
             ptStart.x = event.clientX;
             ptStart.y = event.clientY;
@@ -174,19 +213,21 @@ function iniMotion () {
                 fullySelected: true // ... select so we can see segment points
             });
             ptLast = ptStart;
-}
-function makeMotion () {
-                  m_rate = 4;                          // ... some sort of speed scale?
+    }
+
+        function makeMotion () {
+                  m_rate = 5;                          // ... some sort of speed scale?  //4
                   var x,y,z;                           // temp var for sturmer manual system
                   var to_x = ptNew.x;
                   var to_y = ptNew.y;
+                  
                   v1 = ptNew - ptLast;
-                  if (v1.length > 25) {                // Apply LENGTH criterion ... is this when motion starts?
+                  if (v1.length > 5) {                // Apply LENGTH criterion ... is this when motion starts?? //5
                     ptLast.x = ptNew.x;                // ... learned can't copy because by ref
                     ptLast.y = ptNew.y;
                       path.add(ptNew)
                       pt_ct++;
-                      // console.log('new> ' + ptNew + '  old> ' + ptLast + '  dif> ' + v1.length);
+                console.log('new> ' + ptNew + '  old> ' + ptLast + '  dif> ' + v1.length);
                       if (pt_ct >= m_rate) {
                         console.log('smooth_segCt> ' + seg_ct + ' pts> ' + pt_ct);
                         pt_ct = 0;
@@ -197,25 +238,33 @@ function makeMotion () {
                           for (i = 0; i < 1; i += 0.1) {
                             smooth_pt = path.getPointAt(len_here + (i * dist_now));
 
-                            	x = ((smooth_pt.x - bbox.bounds.left) / riUnit);
+                                x = ((smooth_pt.x - bbox.bounds.left) / riUnit);
                             	y = ((bbox.bounds.bottom - smooth_pt.y) / riUnit);
-						      var code = ['G1']
-						      if(x != undefined) {code.push('X' + x.toFixed(4));}
-						      if(y != undefined) {code.push('Y' + y.toFixed(4));}
-						      if(z != undefined) {code.push('Z' + z.toFixed(4));}
+                            
+                            //================================== 
+                                if (cur_press < last_z) {last_z -= .01};
+                                if (cur_press > last_z) {last_z += .01};
+                               
+                                z = last_z //cur_press/2 * -1   //target_z;
+                   console.log("last--- ",last_z);             
+                            //==================================
+
+                              var code = ['G1']
+						      if(x != undefined) {code.push('X' + x.toFixed(3));}
+						      if(y != undefined) {code.push('Y' + y.toFixed(3));}
+						      if(z != undefined) {code.push('Z' + z.toFixed(3));}
 						      code.push('F180');
 						      console.log(code);
-						      //code.push('F60');
 						      fabmo.manualRunGCode(code.join(''))
-
                           }
                           len_here = path.length;
                       }
                   }
-            textItem1.content = 'Segment count/length: ' + path.segments.length + ' / ' + path.length.toFixed(3);
-}
-function stopMotion () {
+            if(cur_press != undefined) {str_press = cur_press.toFixed(2)} else {str_press = "-"}; 
+            textItem1.content = 'Segment count/length: ' + path.segments.length + ' / ' + path.length.toFixed(3) + "    Pressure: " + str_press;
+        }
 
+    function stopMotion () {
             var x,y,z;             // ... temp var for Sturmer manual mode
             path.smooth({ type: 'geometric', factor: 0.5, from: seg_ct, to: (seg_ct + pt_ct)});
                             var dist_now = (path.length - len_here);
@@ -224,7 +273,9 @@ function stopMotion () {
 
                             	x = ((smooth_pt.x - bbox.bounds.left) / riUnit);
                             	y = ((bbox.bounds.bottom - smooth_pt.y) / riUnit);
-						      var code = ['G1']
+                                z = 0.1;                                                    // pull up to
+
+                              var code = ['G1']
 						      if(x != undefined) {code.push('X' + x.toFixed(4));}
 						      if(y != undefined) {code.push('Y' + y.toFixed(4));}
 						      if(z != undefined) {code.push('Z' + z.toFixed(4));}
@@ -233,10 +284,10 @@ function stopMotion () {
 						      console.log(code);
 						      //code.push('F60');
 						      fabmo.manualRunGCode(code.join(''))
-
                             }
                             len_here = path.length;
-            textItem1.content = 'Segment count/length: ' + path.segments.length + ' / ' + path.length.toFixed(3);
+            if(cur_press != undefined) {str_press = cur_press.toFixed(2)} else {str_press = "-"}; 
+            textItem1.content = 'Segment count/length: ' + path.segments.length + ' / ' + path.length.toFixed(3) + "    Pressure: " + str_press;
             pt_ct = 0;
             seg_ct = 0;
             len_here = 0;
@@ -251,7 +302,7 @@ function stopMotion () {
              var newSegmentCount = path.segments.length;
              var difference = segmentCount - newSegmentCount;
              var percentage = 100 - Math.round(newSegmentCount / segmentCount * 100);
-}
+    }
 
 
   // riTool.onKeyUp = function(event) {
@@ -262,7 +313,9 @@ function stopMotion () {
   //         return false;
   //     }
   // }        
-//===========================ACTION FUNCTIONS
+
+//===========================HOUSEKEEPING ACTION FUNCTIONS
+
 //---------------------------drawing
     function onResize () {
     // - Update WorkArea Bounding-Box and Tool Markers ...
@@ -300,7 +353,7 @@ function stopMotion () {
         "         ZOOM: " + riScale.toFixed(2);
     }
 
-    // - Deal with ZOOM by mousewheel
+    // - ZOOMing with mousewheel
     $('#riCanvas').on('mousewheel DOMMouseScroll MozMousePixelScroll', function(event) { 
         var zoomScale = 0.1;                       // Smooth scaling a bit
         if (riScale > 1.2) zoomScale = 0.2;
@@ -320,9 +373,10 @@ function stopMotion () {
     fabmo.on('status', function(status) {
       globals.tool_x = status.posx;
       globals.tool_y = status.posy;
+      globals.tool_z = status.posz;
       circle.position.x = bbox.bounds.left + (globals.tool_x * riUnit); 
       circle.position.y = bbox.bounds.bottom - (globals.tool_y * riUnit); 
-      textItem2.content = 'Tool Location: ' + globals.tool_x.toFixed(3) + ', ' + globals.tool_y.toFixed(3);
+      textItem2.content = 'Tool Location: ' + globals.tool_x.toFixed(2) + ', ' + globals.tool_y.toFixed(2) + ', ' + globals.tool_z.toFixed(2);
     });
 
     fabmo.getConfig(function(err, cfg) {
@@ -341,13 +395,20 @@ function stopMotion () {
     // document.addEventListener('drag', mouseDrag);
     // document.addEventListener('mouseup', mouseUp);
 
-//--------------------------ready!
+
+    //--------------------------DOCUMENT 
+
     $(document).ready(function() {
         onResize();   
         fabmo.requestStatus(); // Make sure we have start location
-        riCanvas.addEventListener('mousedown', mouseDown);
-        riCanvas.addEventListener('mousemove', mouseMove);
-        riCanvas.addEventListener('mouseup', mouseUp);
+        // riCanvas.addEventListener('mousedown', mouseDown);
+        // riCanvas.addEventListener('mousemove', mouseMove);
+        // riCanvas.addEventListener('mouseup', mouseUp);
+
+        riCanvas.addEventListener('pointerdown', mouseDown);
+        riCanvas.addEventListener('pointermove', mouseMove);
+        riCanvas.addEventListener('pointerup', mouseUp);
+
 
         fabmo.manualEnter({hideKeypad:true, mode:'raw'});
 
